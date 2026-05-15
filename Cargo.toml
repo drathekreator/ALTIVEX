@@ -20,4 +20,4 @@ serialport = "4.3"
 actix = "0.13"
 actix-web-actors = "4.3"
 rumqttc = "0.24"
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }

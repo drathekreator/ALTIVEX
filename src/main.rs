@@ -391,7 +391,7 @@ async fn main() -> std::io::Result<()> {
 
     // Inisialisasi Broadcast Channel untuk WebSockets
     let (tx, _) = broadcast::channel(100);
-    let tx_data = web::Data::new(tx);
+    let tx_data = web::Data::new(tx.clone());
 
     // INIT: Membuat tabel secara otomatis jika belum ada di database
     sqlx::query(
