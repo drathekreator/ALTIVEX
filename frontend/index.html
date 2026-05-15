@@ -749,13 +749,26 @@
                 }
             }
 
+            async function fetchInitialSensorData() {
+                try {
+                    const response = await fetch("/api/sensor");
+                    const data = await response.json();
+                    // Gunakan data terbaru untuk setiap perangkat
+                    data.forEach(d => {
+                        if (!latestDataPerDevice[d.id_perangkat]) {
+                            latestDataPerDevice[d.id_perangkat] = d;
+                        }
+                    });
+                    renderHikerCards();
+                } catch(e) { console.error("Gagal fetch initial sensor:", e); }
+            }
+
             // --- INIT ---
             setInterval(checkStatuses, 5000);
             checkStatuses();
+            fetchInitialSensorData(); // Ambil data terakhir agar muncul di dropdown
             fetchPendakiAktif();
             connectWebSocket();
         </script>
-    </body>
-</html>
     </body>
 </html>

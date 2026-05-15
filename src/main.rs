@@ -294,39 +294,44 @@ async fn start_mqtt_client(
 
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
     
-    // Subscribe ke topik data sensor
-    if let Err(e) = client.subscribe("altivex/sensor/data", QoS::AtMostOnce).await {
-        println!("❌ Gagal subscribe MQTT: {:?}", e);
-        return;
-    }
-    
-    println!("📡 MQTT Subscriber aktif di topic: altivex/sensor/data");
-
+    // Loop utama untuk retry koneksi jika Mosquitto sempat mati/restart
     loop {
-        match eventloop.poll().await {
-            Ok(Event::Incoming(Packet::Publish(publish))) => {
-                let payload = publish.payload;
-                if let Ok(data) = serde_json::from_slice::<IncomingData>(&payload) {
-                    // Simpan ke DB
-                    let _ = sqlx::query("INSERT INTO log_sensor (id_perangkat, latitude, longitude) VALUES ($1, $2, $3)")
-                        .bind(&data.id_perangkat)
-                        .bind(data.latitude)
-                        .bind(data.longitude)
-                        .execute(&pool)
-                        .await;
+        // Subscribe ke topik data sensor
+        if let Err(e) = client.subscribe("altivex/sensor/data", QoS::AtMostOnce).await {
+            println!("❌ Gagal subscribe MQTT: {:?}. Mencoba lagi dalam 5 detik...", e);
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            continue;
+        }
+        
+        println!("📡 MQTT Subscriber aktif di topic: altivex/sensor/data");
 
-                    // Broadcast ke WebSocket
-                    if let Ok(json_str) = serde_json::to_string(&data) {
-                        let _ = tx.send(json_str);
+        loop {
+            match eventloop.poll().await {
+                Ok(Event::Incoming(Packet::Publish(publish))) => {
+                    let payload = publish.payload;
+                    if let Ok(data) = serde_json::from_slice::<IncomingData>(&payload) {
+                        // Simpan ke DB
+                        let _ = sqlx::query("INSERT INTO log_sensor (id_perangkat, latitude, longitude) VALUES ($1, $2, $3)")
+                            .bind(&data.id_perangkat)
+                            .bind(data.latitude)
+                            .bind(data.longitude)
+                            .execute(&pool)
+                            .await;
+
+                        // Broadcast ke WebSocket
+                        if let Ok(json_str) = serde_json::to_string(&data) {
+                            let _ = tx.send(json_str);
+                        }
                     }
                 }
+                Err(e) => {
+                    println!("⚠️ MQTT Connection Error: {:?}. Reconnecting...", e);
+                    break; // Keluar dari loop polling untuk masuk ke loop retry subscribe
+                }
+                _ => {}
             }
-            Err(e) => {
-                println!("⚠️ MQTT Error: {:?}. Mencoba kembali...", e);
-                tokio::time::sleep(Duration::from_secs(5)).await;
-            }
-            _ => {}
         }
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
 
