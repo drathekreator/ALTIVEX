@@ -107,6 +107,7 @@ struct Pendaki {
     id: i32,
     nama_pendaki: String,
     id_perangkat: String,
+    telepon_darurat: String,
     tanggal_naik: chrono::NaiveDateTime,
     status: String,
 }
@@ -115,6 +116,12 @@ struct Pendaki {
 struct RegistrasiPendaki {
     nama_pendaki: String,
     id_perangkat: String,
+    telepon_darurat: String,
+}
+
+#[derive(Deserialize)]
+struct SearchQuery {
+    q: String,
 }
 
 // GET /api/pendaki
@@ -129,10 +136,11 @@ async fn ambil_pendaki(pool: web::Data<Pool<Postgres>>) -> impl Responder {
 
 // POST /api/pendaki
 async fn registrasi_pendaki(data: web::Json<RegistrasiPendaki>, pool: web::Data<Pool<Postgres>>) -> impl Responder {
-    let query = "INSERT INTO pendaki (nama_pendaki, id_perangkat, status) VALUES ($1, $2, 'Mendaki')";
+    let query = "INSERT INTO pendaki (nama_pendaki, id_perangkat, telepon_darurat, status) VALUES ($1, $2, $3, 'Mendaki')";
     let result = sqlx::query(query)
         .bind(&data.nama_pendaki)
         .bind(&data.id_perangkat)
+        .bind(&data.telepon_darurat)
         .execute(pool.get_ref())
         .await;
     match result {
@@ -148,6 +156,29 @@ async fn selesaikan_pendakian(path: web::Path<String>, pool: web::Data<Pool<Post
     let result = sqlx::query(query).bind(&id_perangkat).execute(pool.get_ref()).await;
     match result {
         Ok(_) => HttpResponse::Ok().body("Pendakian diselesaikan."),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
+    }
+}
+
+// GET /api/pendaki/riwayat — Ambil semua pendaki (termasuk yang sudah turun)
+async fn ambil_riwayat_pendaki(pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    let query = "SELECT * FROM pendaki ORDER BY tanggal_naik DESC LIMIT 100";
+    let records = sqlx::query_as::<_, Pendaki>(query).fetch_all(pool.get_ref()).await;
+    match records {
+        Ok(data) => HttpResponse::Ok().json(data),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
+    }
+}
+
+// GET /api/pendaki/cari?q=nama — Cari pendaki berdasarkan nama
+async fn cari_pendaki(query: web::Query<SearchQuery>, pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    let sql = "SELECT * FROM pendaki WHERE nama_pendaki ILIKE '%' || $1 || '%' ORDER BY tanggal_naik DESC LIMIT 50";
+    let records = sqlx::query_as::<_, Pendaki>(sql)
+        .bind(&query.q)
+        .fetch_all(pool.get_ref())
+        .await;
+    match records {
+        Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
 }
@@ -412,6 +443,7 @@ async fn main() -> std::io::Result<()> {
             id SERIAL PRIMARY KEY,
             nama_pendaki VARCHAR(255) NOT NULL,
             id_perangkat VARCHAR(50) NOT NULL,
+            telepon_darurat VARCHAR(20) NOT NULL DEFAULT '',
             tanggal_naik TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             status VARCHAR(50) NOT NULL
         );"
@@ -449,6 +481,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/pendaki", web::get().to(ambil_pendaki)) // List Pendaki
             .route("/api/pendaki", web::post().to(registrasi_pendaki)) // Create Pendaki
             .route("/api/pendaki/{id}/selesai", web::put().to(selesaikan_pendakian)) // Update Status Pendaki
+            .route("/api/pendaki/riwayat", web::get().to(ambil_riwayat_pendaki)) // Riwayat Semua Pendaki
+            .route("/api/pendaki/cari", web::get().to(cari_pendaki)) // Search Pendaki
             .route("/api/alert", web::post().to(kirim_peringatan)) // Endpoint aksi peringatan
             .route("/api/status", web::get().to(cek_status)) // Endpoint status basecamp
             .route("/ws", web::get().to(ws_index)) // Endpoint WebSockets
