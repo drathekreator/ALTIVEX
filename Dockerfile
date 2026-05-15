@@ -14,7 +14,7 @@ COPY --from=builder /app/frontend ./frontend
 
 # Kita override environment variables
 ENV DATABASE_URL=postgres://altivex:rahasia@postgres:5432/altivex_db
-ENV SERIAL_PORT=COM3
+ENV SERIAL_PORT=/dev/ttyUSB0
 # Sebenarnya serial_port tidak dipakai jika berjalan di cloud, backend hanya baca MQTT nantinya
 
 EXPOSE 8080

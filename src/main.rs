@@ -240,6 +240,8 @@ impl Handler<WsMessage> for MyWs {
 
     fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) {
         ctx.text(msg.0);
+    }
+}
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         if let Ok(ws::Message::Ping(msg)) = msg {

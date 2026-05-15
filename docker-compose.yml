@@ -36,7 +36,8 @@ services:
       - "80:8080"
     environment:
       - DATABASE_URL=postgres://altivex:rahasia@postgres:5432/altivex_db
-      - MQTT_BROKER_URL=mqtt://mosquitto:1883
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
     restart: always
 
 volumes:
