@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ALTIVEX | Dashboard</title>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+        <style>
+            /* --- GLOBAL STYLES --- */
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: "Poppins", sans-serif;
+                background-color: #fdfbfb; /* Soft Cream */
+                color: #4a4a4a;
+            }
+
+            /* --- HEADER --- */
+            header {
+                background-color: #ffffff;
+                padding: 20px 40px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            header h1 {
+                font-size: 24px;
+                font-weight: 600;
+                color: #5d6d7e;
+            }
+            .logo-icon {
+                font-size: 28px;
+            }
+
+            /* --- MAIN LAYOUT (RESPONSIVE FLEXBOX) --- */
+            .dashboard-container {
+                display: flex;
+                flex-direction: row;
+                gap: 20px;
+                padding: 0 40px 40px 40px;
+                height: calc(100vh - 100px);
+            }
+
+            /* Bagian Peta */
+            .map-section {
+                flex: 2; /* Mengambil ruang lebih besar */
+                background: white;
+                border-radius: 20px;
+                padding: 15px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+                display: flex;
+                flex-direction: column;
+            }
+            #map {
+                flex: 1;
+                border-radius: 15px;
+                width: 100%;
+            }
+
+            /* Bagian Data Pendaki */
+            .data-section {
+                flex: 1; /* Mengambil sisa ruang */
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                overflow-y: auto;
+                padding-right: 10px;
+            }
+            .data-section h2 {
+                font-size: 18px;
+                margin-bottom: 5px;
+                color: #5d6d7e;
+            }
+
+            /* --- HIKER CARDS --- */
+            .hiker-card {
+                background: #ffffff;
+                border-radius: 16px;
+                padding: 20px;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+                transition: transform 0.2s ease;
+                border-left: 6px solid #d8e2dc; /* Default Soft Green */
+            }
+            .hiker-card:hover {
+                transform: translateY(-3px);
+            }
+
+            .hiker-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+            .hiker-id {
+                font-weight: 600;
+                font-size: 16px;
+            }
+            .badge {
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            /* Palet Warna Status */
+            .status-safe {
+                background-color: #d8e2dc;
+                color: #3b5a45;
+            }
+            .status-danger {
+                background-color: #ffcad4;
+                color: #8a2c3a;
+            }
+            .card-danger {
+                border-left-color: #ffcad4;
+                background-color: #fff5f7;
+            }
+
+            .metrics {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+            .metric-box {
+                background: #f8f9fa;
+                padding: 10px;
+                border-radius: 10px;
+                text-align: center;
+            }
+            .metric-value {
+                font-size: 18px;
+                font-weight: 600;
+                color: #333;
+            }
+            .metric-label {
+                font-size: 11px;
+                color: #888;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .btn-action {
+                width: 100%;
+                padding: 10px;
+                border: none;
+                border-radius: 10px;
+                background-color: #ffcad4;
+                color: #8a2c3a;
+                font-weight: 600;
+                font-family: inherit;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: none; /* Sembunyikan jika aman */
+            }
+            .btn-action.show {
+                display: block;
+            }
+            .btn-action:hover {
+                background-color: #f4acb9;
+            }
+
+            /* Tombol History */
+            .btn-history {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #d8e2dc;
+                border-radius: 10px;
+                background-color: transparent;
+                color: #5d6d7e;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .btn-history:hover {
+                background-color: #d8e2dc;
+                color: #3b5a45;
+            }
+            .btn-history.active {
+                background-color: #5d6d7e;
+                color: white;
+                border-color: #5d6d7e;
+            }
+
+            /* Animasi Pulsa */
+            @keyframes pulse-ring {
+                0% { transform: scale(0.8); opacity: 0.5; }
+                100% { transform: scale(2.5); opacity: 0; }
+            }
+            .pulse-dot {
+                position: relative;
+            }
+            .pulse-dot::before {
+                content: '';
+                position: absolute;
+                left: 0; top: 0;
+                width: 100%; height: 100%;
+                background-color: inherit;
+                border-radius: 50%;
+                animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            }
+
+            /* --- RESPONSIVE MOBILE & TABLET --- */
+            @media (max-width: 900px) {
+                .dashboard-container {
+                    flex-direction: column; /* Tumpuk atas-bawah */
+                    height: auto;
+                    padding: 0 20px 20px 20px;
+                }
+                .map-section {
+                    height: 400px;
+                    flex: none;
+                }
+                header {
+                    padding: 15px 20px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div style="display:flex; align-items: center; gap: 15px; flex: 1;">
+                <div class="logo-icon">⛰️</div>
+                <h1>ALTIVEX Dashboard</h1>
+            </div>
+            <div id="basecamp-status" style="font-weight: 500; font-size: 14px; padding: 8px 15px; border-radius: 20px; background: #eee; color: #555; display: flex; align-items: center; gap: 8px;">
+                <span id="basecamp-dot" style="width: 10px; height: 10px; background-color: #888; border-radius: 50%; display: inline-block;"></span>
+                <span id="basecamp-text">Mengecek Basecamp...</span>
+            </div>
+            <div id="cloud-status" style="font-weight: 500; font-size: 14px; padding: 8px 15px; border-radius: 20px; background: #ffe5d9; color: #d62828; display: flex; align-items: center; gap: 8px; margin-left: 10px;">
+                <span id="cloud-dot" style="width: 10px; height: 10px; background-color: #d62828; border-radius: 50%; display: inline-block;"></span>
+                <span id="cloud-text">Offline Failsafe Mode</span>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <section class="map-section">
+                <div id="map"></div>
+            </section>
+
+            <section class="data-section">
+                <h2>Perangkat Tersedia</h2>
+                <div id="available_list"></div>
+
+                <h2 style="margin-top: 15px;">Pendaki Aktif</h2>
+                <div id="hiker_list"></div>
+            </section>
+        </div>
+
+        <script>
+            var posJagaLatLng = [-6.7711, 106.9600];
+            var map = L.map("map").setView(posJagaLatLng, 15);
+
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "© OpenStreetMap",
+            }).addTo(map);
+
+            // Geofence area (Zona Aman)
+            var batasAman = 500;
+            var geofence = L.circle(posJagaLatLng, {
+                color: "#a3b18a", // Soft green outline
+                fillColor: "#d8e2dc", // Soft green fill
+                fillOpacity: 0.3,
+                radius: batasAman,
+            }).addTo(map);
+
+            var activeMarkers = {};
+            var latestDataPerDevice = {};
+            var registeredHikers = {};
+
+            async function fetchPendakiAktif() {
+                try {
+                    const response = await fetch("/api/pendaki");
+                    const data = await response.json();
+                    registeredHikers = {};
+                    data.forEach(p => {
+                        registeredHikers[p.id_perangkat] = p;
+                    });
+                    renderHikerCards();
+                } catch(e) {
+                    console.error("Gagal mengambil data pendaki", e);
+                }
+            }
+
+            function renderHikerCards() {
+                let activeHTML = "";
+                let availableHTML = "";
+
+                for (let id in latestDataPerDevice) {
+                    let hiker = latestDataPerDevice[id];
+                    let latLng = new L.LatLng(hiker.latitude, hiker.longitude);
+                    let jarak = map.distance(posJagaLatLng, latLng);
+
+                    // Update Peta
+                    if (!activeMarkers[id]) {
+                        activeMarkers[id] = L.marker(latLng).addTo(map);
+                    } else {
+                        activeMarkers[id].setLatLng(latLng);
+                    }
+
+                    if (registeredHikers[id]) {
+                        // PENDAKI AKTIF
+                        let pendaki = registeredHikers[id];
+                        let isKeluarJalur = jarak > batasAman;
+                        
+                        let statusText = isKeluarJalur ? "Keluar Jalur" : "Aman";
+                        let cardClass = isKeluarJalur ? "card-danger" : "";
+                        let badgeClass = isKeluarJalur ? "status-danger" : "status-safe";
+                        let btnShow = isKeluarJalur ? "show" : "";
+
+                        activeMarkers[id].bindPopup(`<b>${pendaki.nama_pendaki}</b><br>Alat: ${id}<br>Status: ${statusText}`);
+
+                        activeHTML += `
+                            <div class="hiker-card ${cardClass}">
+                                <div class="hiker-header">
+                                    <span class="hiker-id">${pendaki.nama_pendaki} <small style="color:#888;">(${id})</small></span>
+                                    <span class="badge ${badgeClass}">${statusText}</span>
+                                </div>
+                                <div class="metrics">
+                                    <div class="metric-box">
+                                        <div class="metric-value">${Math.round(jarak)}m</div>
+                                        <div class="metric-label">Jarak dari Pos</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-value">AKTIF</div>
+                                        <div class="metric-label">Sinyal GPS</div>
+                                    </div>
+                                </div>
+                                <button id="btn-hist-${id}" class="btn-history ${activePolylines[id] ? 'active' : ''}" onclick="toggleHistory('${id}')">
+                                    🗺️ Toggle History Path
+                                </button>
+                                <button class="btn-action ${btnShow}" onclick="kirimGetaran('${id}', '${statusText}')" style="margin-top: 5px;">
+                                    🔔 Kirim Getaran Peringatan
+                                </button>
+                                <button class="btn-history" onclick="selesaikanPendakian('${id}')" style="margin-top: 5px; border-color: #52b788; color: #52b788;">
+                                    ✅ Selesaikan Pendakian
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // PERANGKAT TERSEDIA
+                        activeMarkers[id].bindPopup(`<b>${id}</b><br>Belum digunakan`);
+                        
+                        availableHTML += `
+                            <div class="hiker-card">
+                                <div class="hiker-header">
+                                    <span class="hiker-id">${id}</span>
+                                    <span class="badge" style="background:#eee; color:#666;">Standby</span>
+                                </div>
+                                <div class="metrics">
+                                    <div class="metric-box">
+                                        <div class="metric-value">${Math.round(jarak)}m</div>
+                                        <div class="metric-label">Jarak</div>
+                                    </div>
+                                </div>
+                                <button class="btn-history" onclick="registrasiPendaki('${id}')" style="border-color: #5d6d7e; color: #5d6d7e;">
+                                    📝 Registrasi Pendaki Baru
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+
+                document.getElementById("hiker_list").innerHTML = activeHTML || "<p style='color:#888; font-size:14px;'>Tidak ada pendaki aktif.</p>";
+                document.getElementById("available_list").innerHTML = availableHTML || "<p style='color:#888; font-size:14px;'>Semua perangkat sedang digunakan atau offline.</p>";
+            }
+
+            var activePolylines = {};
+
+            async function toggleHistory(id_perangkat) {
+                if (activePolylines[id_perangkat]) {
+                    // Jika path sudah digambar, maka hapus
+                    map.removeLayer(activePolylines[id_perangkat]);
+                    delete activePolylines[id_perangkat];
+                    document.getElementById(`btn-hist-${id_perangkat}`).classList.remove("active");
+                } else {
+                    try {
+                        const response = await fetch(`/api/history/${id_perangkat}`);
+                        const data = await response.json();
+                        
+                        let latlngs = data.map(pos => [pos.latitude, pos.longitude]);
+                        
+                        // Gambar garis putus-putus
+                        let polyline = L.polyline(latlngs, {
+                            color: '#5d6d7e',
+                            weight: 3,
+                            opacity: 0.8,
+                            dashArray: '10, 10', // Efek dashed line
+                            lineJoin: 'round'
+                        }).addTo(map);
+
+                        activePolylines[id_perangkat] = polyline;
+                        map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+                        
+                        document.getElementById(`btn-hist-${id_perangkat}`).classList.add("active");
+                    } catch(err) {
+                        alert("Gagal memuat history path dari server!");
+                    }
+                }
+            }
+
+            async function fetchInitialSensorData() {
+                try {
+                    const response = await fetch("/api/sensor");
+                    const data = await response.json();
+
+                    // Urutkan data dari yang terlama ke terbaru agar state terbaru yang tersimpan terakhir
+                    for (let i = data.length - 1; i >= 0; i--) {
+                        let row = data[i];
+                        latestDataPerDevice[row.id_perangkat] = row;
+                    }
+                    await fetchPendakiAktif(); // Panggil data pendaki setelah sensor didapat
+                } catch (error) {
+                    console.error("Gagal mengambil data awal:", error);
+                }
+            }
+
+            async function registrasiPendaki(id_perangkat) {
+                let nama = prompt(`Masukkan nama pendaki untuk alat ${id_perangkat}:`);
+                if (nama && nama.trim() !== "") {
+                    try {
+                        const response = await fetch("/api/pendaki", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                nama_pendaki: nama,
+                                id_perangkat: id_perangkat
+                            })
+                        });
+                        if(response.ok) {
+                            alert("Berhasil mendaftarkan pendaki!");
+                            fetchPendakiAktif();
+                        }
+                    } catch(e) {
+                        alert("Gagal menghubungi server");
+                    }
+                }
+            }
+
+            async function selesaikanPendakian(id_perangkat) {
+                if(confirm("Apakah pendaki ini sudah kembali ke Pos Jaga dengan selamat?")) {
+                    try {
+                        const response = await fetch(`/api/pendaki/${id_perangkat}/selesai`, {
+                            method: "PUT"
+                        });
+                        if(response.ok) {
+                            alert("Pendakian diselesaikan! Alat bisa digunakan kembali.");
+                            if(activePolylines[id_perangkat]) {
+                                map.removeLayer(activePolylines[id_perangkat]);
+                                delete activePolylines[id_perangkat];
+                            }
+                            fetchPendakiAktif();
+                        }
+                    } catch(e) {
+                        alert("Gagal menghubungi server");
+                    }
+                }
+            }
+
+            function connectWebSocket() {
+                const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+                const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+                ws.onopen = () => console.log("WebSocket Terhubung");
+                
+                ws.onmessage = (event) => {
+                    const newData = JSON.parse(event.data);
+                    // Update state dengan data terbaru dari WebSocket
+                    latestDataPerDevice[newData.id_perangkat] = newData;
+                    // Render ulang UI secara instan
+                    renderHikerCards();
+                };
+
+                ws.onclose = () => {
+                    console.log("WebSocket Terputus. Menghubungkan kembali dalam 3 detik...");
+                    setTimeout(connectWebSocket, 3000);
+                };
+            }
+
+            async function kirimGetaran(id_perangkat, status) {
+                if (
+                    confirm(
+                        `Kirim perintah getar ke ${id_perangkat} karena: ${status}?`,
+                    )
+                ) {
+                    try {
+                        const response = await fetch("/api/alert", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                id_perangkat: id_perangkat,
+                                jenis_peringatan: status,
+                            }),
+                        });
+                        const resultText = await response.text();
+                        alert(resultText);
+                    } catch (error) {
+                        alert("Gagal menghubungi server!");
+                    }
+                }
+            }
+
+            function updateCloudStatus() {
+                const cloudStatus = document.getElementById("cloud-status");
+                const cloudDot = document.getElementById("cloud-dot");
+                const cloudText = document.getElementById("cloud-text");
+
+                if (navigator.onLine) {
+                    cloudText.innerText = "Cloud Synced (Online)";
+                    cloudStatus.style.backgroundColor = "#d8e2dc";
+                    cloudStatus.style.color = "#3b5a45";
+                    cloudDot.style.backgroundColor = "#52b788";
+                } else {
+                    cloudText.innerText = "Offline Failsafe Mode";
+                    cloudStatus.style.backgroundColor = "#ffe5d9";
+                    cloudStatus.style.color = "#d62828";
+                    cloudDot.style.backgroundColor = "#d62828";
+                }
+            }
+
+            window.addEventListener('online', updateCloudStatus);
+            window.addEventListener('offline', updateCloudStatus);
+            updateCloudStatus();
+
+            async function fetchBasecampStatus() {
+                try {
+                    const response = await fetch("/api/status");
+                    const data = await response.json();
+                    
+                    const statusBg = document.getElementById("basecamp-status");
+                    const statusDot = document.getElementById("basecamp-dot");
+                    const statusText = document.getElementById("basecamp-text");
+                    
+                    if (data.status === "online") {
+                        statusText.innerText = `Basecamp Online (${data.port})`;
+                        statusBg.style.backgroundColor = "#d8e2dc";
+                        statusBg.style.color = "#3b5a45";
+                        statusDot.style.backgroundColor = "#52b788";
+                        statusDot.classList.add("pulse-dot"); // Tambah animasi detak
+                    } else {
+                        statusText.innerText = `Basecamp Offline (${data.port})`;
+                        statusBg.style.backgroundColor = "#ffcad4";
+                        statusBg.style.color = "#8a2c3a";
+                        statusDot.style.backgroundColor = "#e63946";
+                        statusDot.classList.remove("pulse-dot");
+                    }
+                } catch (error) {
+                    document.getElementById("basecamp-text").innerText = "Koneksi Server Terputus!";
+                    document.getElementById("basecamp-dot").style.backgroundColor = "#888";
+                }
+            }
+
+            // Cek status perangkat Basecamp setiap 3 detik
+            setInterval(fetchBasecampStatus, 3000);
+            fetchBasecampStatus();
+            
+            // Ambil data sensor awal, lalu gunakan WebSockets untuk update instan
+            fetchInitialSensorData();
+            connectWebSocket();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,6 @@
+target/
+**/*.rs.bk
+.env
+Dockerfile
+docker-compose.yml
+mosquitto/
