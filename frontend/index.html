@@ -388,43 +388,21 @@
             let activePolylines = {};
             let geofenceBuffer;
 
-            // --- JALUR GEOJSON (REVISI PETA) ---
-            const jalurCibodas = {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [
-                        [106.9600, -6.7711], [106.9650, -6.7750], [106.9700, -6.7800], [106.9750, -6.7900]
-                    ]
-                },
-                "properties": { "name": "Jalur Cibodas" }
+            // --- GEO.JSON: Data Jalur Pendakian Gede-Pangrango ---
+            let geoData = null;       // Full FeatureCollection dari GEO.json
+            let routeFeatures = null; // Hanya LineString (jalur)
+            let waypointFeatures = null; // Hanya Point (pos, camp, summit, dll)
+
+            const routeColors = {
+                'Cibodas': '#2979FF',       // Blue
+                'Gunung Putri': '#FF6D00',  // Orange
+                'Selabintana': '#AA00FF'    // Purple
             };
 
-            const jalurGunungPutri = {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [
-                        [106.9800, -6.7600], [106.9850, -6.7700], [106.9900, -6.7800], [106.9750, -6.7900]
-                    ]
-                },
-                "properties": { "name": "Jalur Gunung Putri" }
-            };
-
-            const jalurSelabintana = {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [
-                        [106.9500, -6.8200], [106.9600, -6.8100], [106.9700, -6.8000], [106.9750, -6.7900]
-                    ]
-                },
-                "properties": { "name": "Jalur Selabintana" }
-            };
-
-            const allJalur = {
-                "type": "FeatureCollection",
-                "features": [jalurCibodas, jalurGunungPutri, jalurSelabintana]
+            const waypointIcons = {
+                'Trailhead': '🚩', 'Gate': '🚪', 'Pos': '🏠', 'Camp': '⛺',
+                'Summit': '🏔️', 'Junction': '🔀', 'Waypoint': '📍',
+                'Water': '💧', 'default': '📌'
             };
 
             // --- MAP INIT ---
@@ -432,20 +410,87 @@
                 attribution: "© OpenStreetMap",
             }).addTo(map);
 
-            // Create Buffer 50m using Turf.js
-            const combinedLine = turf.combine(allJalur);
-            geofenceBuffer = turf.buffer(allJalur, 0.05, { units: 'kilometers' }); // 50m = 0.05km
+            // Load GEO.json lalu render peta
+            async function initGeoData() {
+                try {
+                    const res = await fetch('/GEO.json');
+                    geoData = await res.json();
 
-            L.geoJSON(allJalur, {
-                style: { color: "#000", weight: 3, dashArray: '5, 10', opacity: 0.5 }
-            }).addTo(map);
+                    // Pisahkan Route (LineString) dan Waypoint (Point)
+                    routeFeatures = {
+                        type: "FeatureCollection",
+                        features: geoData.features.filter(f => f.geometry.type === 'LineString')
+                    };
+                    waypointFeatures = geoData.features.filter(f => f.geometry.type === 'Point');
 
-            L.geoJSON(geofenceBuffer, {
-                style: { color: "var(--green)", fillColor: "var(--green)", fillOpacity: 0.2, weight: 1 }
-            }).addTo(map);
+                    // 1) Render jalur pendakian (dashed line, warna per-rute)
+                    L.geoJSON(routeFeatures, {
+                        style: function(feature) {
+                            const routeName = feature.properties.route || '';
+                            return {
+                                color: routeColors[routeName] || '#000',
+                                weight: 4,
+                                dashArray: '8, 6',
+                                opacity: 0.85
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            layer.bindPopup(`<b>${feature.properties.name}</b>`);
+                        }
+                    }).addTo(map);
 
-            const jalurBounds = L.geoJSON(allJalur).getBounds();
-            map.fitBounds(jalurBounds, { padding: [50, 50] });
+                    // 2) Buat buffer polygon 50m untuk geofencing
+                    geofenceBuffer = turf.buffer(routeFeatures, 0.05, { units: 'kilometers' });
+
+                    L.geoJSON(geofenceBuffer, {
+                        style: {
+                            color: '#00E676',
+                            fillColor: '#00E676',
+                            fillOpacity: 0.12,
+                            weight: 1,
+                            dashArray: '3, 3'
+                        }
+                    }).addTo(map);
+
+                    // 3) Render waypoint markers (pos, camp, summit, dll)
+                    waypointFeatures.forEach(wp => {
+                        const [lng, lat] = wp.geometry.coordinates;
+                        const props = wp.properties;
+                        const icon = waypointIcons[props.type] || waypointIcons['default'];
+                        const routeColor = routeColors[props.route] || '#333';
+
+                        const marker = L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                html: `<span style="font-size:18px; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));">${icon}</span>`,
+                                className: '',
+                                iconSize: [24, 24],
+                                iconAnchor: [12, 12]
+                            })
+                        }).addTo(map);
+
+                        const elev = props.elevation_m ? `${props.elevation_m} mdpl` : '-';
+                        marker.bindPopup(
+                            `<div style="font-family:Outfit,sans-serif;">` +
+                            `<b style="font-size:14px;">${icon} ${props.name}</b><br>` +
+                            `<span style="background:${routeColor}; color:white; padding:2px 8px; font-size:11px; font-weight:700; border:2px solid #000;">` +
+                            `${props.route}</span><br>` +
+                            `<small>Tipe: ${props.type} | Elevasi: ${elev}</small></div>`
+                        );
+                    });
+
+                    // 4) Fit map ke seluruh jalur
+                    const allBounds = L.geoJSON(routeFeatures).getBounds();
+                    map.fitBounds(allBounds, { padding: [40, 40] });
+
+                    console.log(`✅ GEO.json loaded: ${routeFeatures.features.length} jalur, ${waypointFeatures.length} waypoint`);
+                } catch (err) {
+                    console.error('❌ Gagal memuat GEO.json:', err);
+                    // Fallback view ke area Gede-Pangrango
+                    map.setView([-6.79, 106.97], 13);
+                }
+            }
+
+            initGeoData();
 
             // --- TAB LOGIC ---
             function openTab(tabId) {
@@ -579,7 +624,7 @@
                 for (let id in latestDataPerDevice) {
                     const data = latestDataPerDevice[id];
                     const point = turf.point([data.longitude, data.latitude]);
-                    const isInside = turf.booleanPointInPolygon(point, geofenceBuffer);
+                    const isInside = geofenceBuffer ? turf.booleanPointInPolygon(point, geofenceBuffer) : true; // aman jika data belum dimuat
                     const hiker = registeredHikers[id];
 
                     // Update Marker

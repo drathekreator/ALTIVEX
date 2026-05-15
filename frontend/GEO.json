@@ -1,0 +1,744 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Cibodas parking",
+                "route": "Cibodas",
+                "type": "Trailhead",
+                "elevation_m": 1341
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9917,
+                    -6.745
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Cibodas trailhead",
+                "route": "Cibodas",
+                "type": "Trailhead",
+                "elevation_m": 1367
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9883,
+                    -6.7533
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Telaga Biru",
+                "route": "Cibodas",
+                "type": "Waypoint",
+                "elevation_m": 1575
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107,
+                    -6.7583
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Waterfall jct. Rawa Panyangcangan",
+                "route": "Cibodas",
+                "type": "Junction",
+                "elevation_m": 1654
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9867,
+                    -6.7633
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Cibeureum waterfall jct.",
+                "route": "Cibodas",
+                "type": "Junction",
+                "elevation_m": 1280
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.985,
+                    -6.765
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Shelter 1 Rawa Denok 1",
+                "route": "Cibodas",
+                "type": "Pos",
+                "elevation_m": 1802
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.98,
+                    -6.7733
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Shelter 2 Rawa Denok 2",
+                "route": "Cibodas",
+                "type": "Pos",
+                "elevation_m": 1896
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9767,
+                    -6.7767
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Shelter 3 Batu Kukus 1",
+                "route": "Cibodas",
+                "type": "Pos",
+                "elevation_m": 1950
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.975,
+                    -6.78
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Shelter 4 Batu Kukus 2",
+                "route": "Cibodas",
+                "type": "Pos",
+                "elevation_m": 2048
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9733,
+                    -6.7833
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Hotspring",
+                "route": "Cibodas",
+                "type": "Waypoint",
+                "elevation_m": 2165
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9683,
+                    -6.7883
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Kandang Batu",
+                "route": "Cibodas",
+                "type": "Pos",
+                "elevation_m": 2181
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9667,
+                    -6.7917
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Kandang Badak campsite",
+                "route": "Cibodas",
+                "type": "Camp",
+                "elevation_m": 2406
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9633,
+                    -6.7967
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Gede-Pangrango junction",
+                "route": "Cibodas",
+                "type": "Junction",
+                "elevation_m": 2441
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9617,
+                    -6.7983
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Water source",
+                "route": "Cibodas",
+                "type": "Water",
+                "elevation_m": 2688
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9567,
+                    -6.7867
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Alun-alun Mandalawangi",
+                "route": "Cibodas",
+                "type": "Camp",
+                "elevation_m": 3008
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9533,
+                    -6.7917
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Pangrango summit",
+                "route": "Cibodas",
+                "type": "Summit",
+                "elevation_m": 3020
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9517,
+                    -6.79
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Gunung Gede summit",
+                "route": "Cibodas",
+                "type": "Summit",
+                "elevation_m": 2962
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9717,
+                    -6.7983
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Jalur Cibodas",
+                "route": "Cibodas",
+                "type": "Route"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        106.9917,
+                        -6.745
+                    ],
+                    [
+                        106.9883,
+                        -6.7533
+                    ],
+                    [
+                        107,
+                        -6.7583
+                    ],
+                    [
+                        106.9867,
+                        -6.7633
+                    ],
+                    [
+                        106.985,
+                        -6.765
+                    ],
+                    [
+                        106.98,
+                        -6.7733
+                    ],
+                    [
+                        106.9767,
+                        -6.7767
+                    ],
+                    [
+                        106.975,
+                        -6.78
+                    ],
+                    [
+                        106.9733,
+                        -6.7833
+                    ],
+                    [
+                        106.9683,
+                        -6.7883
+                    ],
+                    [
+                        106.9667,
+                        -6.7917
+                    ],
+                    [
+                        106.9633,
+                        -6.7967
+                    ],
+                    [
+                        106.9617,
+                        -6.7983
+                    ],
+                    [
+                        106.9567,
+                        -6.7867
+                    ],
+                    [
+                        106.9533,
+                        -6.7917
+                    ],
+                    [
+                        106.9517,
+                        -6.79
+                    ],
+                    [
+                        106.9717,
+                        -6.7983
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Gunung Putri trailhead",
+                "route": "Gunung Putri",
+                "type": "Trailhead",
+                "elevation_m": 1553
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107.0167,
+                    -6.7667
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Registration",
+                "route": "Gunung Putri",
+                "type": "Gate",
+                "elevation_m": 1612
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107.0083,
+                    -6.77
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "River",
+                "route": "Gunung Putri",
+                "type": "Water",
+                "elevation_m": 1687
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107.0133,
+                    -6.775
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Legok Leunca",
+                "route": "Gunung Putri",
+                "type": "Pos",
+                "elevation_m": 2015
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107.01,
+                    -6.785
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Buntut Lutung",
+                "route": "Gunung Putri",
+                "type": "Pos",
+                "elevation_m": 2291
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107.0067,
+                    -6.7933
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Lawang Sekateng",
+                "route": "Gunung Putri",
+                "type": "Pos",
+                "elevation_m": 2456
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    107.0017,
+                    -6.7967
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Simpang Maleber",
+                "route": "Gunung Putri",
+                "type": "Pos",
+                "elevation_m": 2640
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9983,
+                    -6.8
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "NE edge of Surya Kencana",
+                "route": "Gunung Putri",
+                "type": "Waypoint",
+                "elevation_m": 2758
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.99,
+                    -6.8033
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Stream and camp",
+                "route": "Gunung Putri",
+                "type": "Camp",
+                "elevation_m": 2724
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9783,
+                    -6.8083
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "SW edge of Surya Kencana",
+                "route": "Gunung Putri",
+                "type": "Waypoint",
+                "elevation_m": 2720
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9767,
+                    -6.8083
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Junction (Gunung Putri)",
+                "route": "Gunung Putri",
+                "type": "Junction",
+                "elevation_m": 1896
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9833,
+                    -6.77
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Jalur Gunung Putri",
+                "route": "Gunung Putri",
+                "type": "Route"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        107.0167,
+                        -6.7667
+                    ],
+                    [
+                        107.0083,
+                        -6.77
+                    ],
+                    [
+                        107.0133,
+                        -6.775
+                    ],
+                    [
+                        107.01,
+                        -6.785
+                    ],
+                    [
+                        107.0067,
+                        -6.7933
+                    ],
+                    [
+                        107.0017,
+                        -6.7967
+                    ],
+                    [
+                        106.9983,
+                        -6.8
+                    ],
+                    [
+                        106.99,
+                        -6.8033
+                    ],
+                    [
+                        106.9783,
+                        -6.8083
+                    ],
+                    [
+                        106.9767,
+                        -6.8083
+                    ],
+                    [
+                        106.9833,
+                        -6.77
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Pondok Halimun carpark",
+                "route": "Selabintana",
+                "type": "Trailhead",
+                "elevation_m": 1111
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.955,
+                    -6.84
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Selabintana office",
+                "route": "Selabintana",
+                "type": "Trailhead",
+                "elevation_m": 1083
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9583,
+                    -6.8383
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Stream",
+                "route": "Selabintana",
+                "type": "Water",
+                "elevation_m": 1097
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9567,
+                    -6.8333
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Kebun",
+                "route": "Selabintana",
+                "type": "Waypoint",
+                "elevation_m": 1362
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.96,
+                    -6.82
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Cigeber",
+                "route": "Selabintana",
+                "type": "Pos",
+                "elevation_m": 1798
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9617,
+                    -6.8167
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Cileutik",
+                "route": "Selabintana",
+                "type": "Waypoint",
+                "elevation_m": 2380
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9667,
+                    -6.8083
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Gunung Geger Bentang",
+                "route": "Selabintana",
+                "type": "Summit",
+                "elevation_m": 2042
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    106.9783,
+                    -6.76
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Jalur Selabintana",
+                "route": "Selabintana",
+                "type": "Route"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        106.955,
+                        -6.84
+                    ],
+                    [
+                        106.9583,
+                        -6.8383
+                    ],
+                    [
+                        106.9567,
+                        -6.8333
+                    ],
+                    [
+                        106.96,
+                        -6.82
+                    ],
+                    [
+                        106.9617,
+                        -6.8167
+                    ],
+                    [
+                        106.9667,
+                        -6.8083
+                    ],
+                    [
+                        106.9783,
+                        -6.76
+                    ]
+                ]
+            }
+        }
+    ]
+}
