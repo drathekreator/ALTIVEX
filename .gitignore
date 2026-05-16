@@ -1,3 +1,42 @@
+# --- Rust ---
 /target
+# Keep Cargo.lock for binary applications to ensure reproducible builds
+# Cargo.lock
+
+# --- Secrets & Config ---
 .env
-/static
+*.env
+!.env.example
+
+# --- Docker & Persistent Data ---
+# Ignore database data and broker state
+mosquitto/data/
+mosquitto/log/*.log
+!mosquitto/log/.gitkeep
+
+# --- IDEs & Editor trash ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# --- Operating System ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Frontend (if any npm used) ---
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+.serverless/
+.fusebox/
+.dynamodb/
+
+# --- SQLx Offline Mode ---
+.sqlx/
