@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     container_name: altivex_postgres
     environment:
-      POSTGRES_USER: altivex
-      POSTGRES_PASSWORD: rahasia
-      POSTGRES_DB: altivex_db
+      POSTGRES_USER: ${POSTGRES_USER:-altivex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rahasia}
+      POSTGRES_DB: ${POSTGRES_DB:-altivex_db}
     ports:
       - "5433:5432"
     volumes:
@@ -33,11 +33,12 @@ services:
       - postgres
       - mosquitto
     ports:
-      - "80:8080"
+      - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://altivex:rahasia@postgres:5432/altivex_db
-      - MQTT_BROKER_HOST=mosquitto
-      - MQTT_BROKER_PORT=1883
+      - DATABASE_URL=${DATABASE_URL}
+      - MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
+      - MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-1883}
+      - SERIAL_PORT=${SERIAL_PORT:-/dev/ttyUSB0}
     restart: always
 
 volumes:
