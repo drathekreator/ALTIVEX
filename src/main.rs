@@ -170,13 +170,46 @@ async fn ambil_riwayat_pendaki(pool: web::Data<Pool<Postgres>>) -> impl Responde
     }
 }
 
-// GET /api/pendaki/cari?q=nama — Cari pendaki berdasarkan nama
-async fn cari_pendaki(query: web::Query<SearchQuery>, pool: web::Data<Pool<Postgres>>) -> impl Responder {
-    let sql = "SELECT * FROM pendaki WHERE nama_pendaki ILIKE '%' || $1 || '%' ORDER BY tanggal_naik DESC LIMIT 50";
-    let records = sqlx::query_as::<_, Pendaki>(sql)
-        .bind(&query.q)
+// DELETE /api/pendaki/{id} — Hapus data pendaki
+async fn hapus_pendaki(path: web::Path<i32>, pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    let id = path.into_inner();
+    let result = sqlx::query("DELETE FROM pendaki WHERE id = $1").bind(id).execute(pool.get_ref()).await;
+    match result {
+        Ok(_) => HttpResponse::Ok().body("Data pendaki dihapus."),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
+    }
+}
+
+// PUT /api/pendaki/{id} — Edit data pendaki
+async fn edit_pendaki(path: web::Path<i32>, data: web::Json<RegistrasiPendaki>, pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    let id = path.into_inner();
+    let query = "UPDATE pendaki SET nama_pendaki=$1, id_perangkat=$2, telepon_darurat=$3 WHERE id=$4";
+    let result = sqlx::query(query)
+        .bind(&data.nama_pendaki)
+        .bind(&data.id_perangkat)
+        .bind(&data.telepon_darurat)
+        .bind(id)
+        .execute(pool.get_ref())
+        .await;
+    match result {
+        Ok(_) => HttpResponse::Ok().body("Data pendaki diperbarui."),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
+    }
+}
+
+// GET /api/pendaki/cari?q=... — Cari pendaki berdasarkan nama
+async fn cari_pendaki(
+    query: web::Query<SearchQuery>,
+    pool: web::Data<Pool<Postgres>>,
+) -> impl Responder {
+    let q = format!("%{}%", query.q);
+    let query_str = "SELECT * FROM pendaki WHERE nama_pendaki ILIKE $1 ORDER BY tanggal_naik DESC LIMIT 50";
+    
+    let records = sqlx::query_as::<_, Pendaki>(query_str)
+        .bind(q)
         .fetch_all(pool.get_ref())
         .await;
+
     match records {
         Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
@@ -487,15 +520,17 @@ async fn main() -> std::io::Result<()> {
             .app_data(tx_data.clone())
             .route("/api/sensor", web::post().to(terima_data))
             .route("/api/sensor", web::get().to(ambil_data))
-            .route("/api/history/{id}", web::get().to(ambil_history)) // Endpoint History Path
-            .route("/api/pendaki", web::get().to(ambil_pendaki)) // List Pendaki
-            .route("/api/pendaki", web::post().to(registrasi_pendaki)) // Create Pendaki
-            .route("/api/pendaki/{id}/selesai", web::put().to(selesaikan_pendakian)) // Update Status Pendaki
-            .route("/api/pendaki/riwayat", web::get().to(ambil_riwayat_pendaki)) // Riwayat Semua Pendaki
-            .route("/api/pendaki/cari", web::get().to(cari_pendaki)) // Search Pendaki
-            .route("/api/alert", web::post().to(kirim_peringatan)) // Endpoint aksi peringatan
-            .route("/api/status", web::get().to(cek_status)) // Endpoint status basecamp
-            .route("/ws", web::get().to(ws_index)) // Endpoint WebSockets
+            .route("/api/history/{id}", web::get().to(ambil_history))
+            .route("/api/pendaki/riwayat", web::get().to(ambil_riwayat_pendaki))
+            .route("/api/pendaki/cari", web::get().to(cari_pendaki))
+            .route("/api/pendaki", web::get().to(ambil_pendaki))
+            .route("/api/pendaki", web::post().to(registrasi_pendaki))
+            .route("/api/pendaki/{id}", web::put().to(edit_pendaki))
+            .route("/api/pendaki/{id}", web::delete().to(hapus_pendaki))
+            .route("/api/pendaki/{id}/selesai", web::put().to(selesaikan_pendakian))
+            .route("/api/alert", web::post().to(kirim_peringatan))
+            .route("/api/status", web::get().to(cek_status))
+            .route("/ws", web::get().to(ws_index))
             .service(Files::new("/", "./frontend").index_file("index.html"))
     })
     .bind(("0.0.0.0", 8080))?

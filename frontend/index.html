@@ -103,15 +103,31 @@
 
             /* --- HEADER --- */
             header {
-                background: var(--yellow);
+                background: var(--white);
                 border-bottom: 4px solid var(--black);
                 padding: 15px 30px;
                 display: flex;
-                align-items: center;
                 justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
                 position: sticky;
                 top: 0;
                 z-index: 1000;
+            }
+
+            @media (max-width: 600px) {
+                header { padding: 12px 15px; }
+                .logo { font-size: 1.4rem; }
+                .tabs-nav { gap: 5px; padding: 10px 15px 0; }
+                .tab-link { padding: 8px 12px; font-size: 0.8rem; }
+                .tab-content { padding: 15px; }
+                #map { height: 55vh; min-height: 350px; }
+                .dashboard-grid { grid-template-columns: 1fr; }
+                .sidebar { height: auto; max-height: 400px; }
+                
+                /* Sembunyikan kolom yang kurang penting di mobile */
+                .hide-mobile { display: none; }
             }
 
             .logo {
@@ -268,9 +284,35 @@
             .dot-green { background: var(--green); }
             .dot-red { background: var(--red); }
 
+            @keyframes pulse {
+                0% { transform: scale(1); box-shadow: var(--shadow); }
+                50% { transform: scale(1.02); box-shadow: 8px 8px 0px 0px var(--red); }
+                100% { transform: scale(1); box-shadow: var(--shadow); }
+            }
+
             @media (max-width: 1000px) {
                 .dashboard-grid { grid-template-columns: 1fr; height: auto; }
                 #map { height: 400px; }
+            }
+
+            /* --- MOBILE RESPONSIVENESS (NEW) --- */
+            @media (max-width: 600px) {
+                header {
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding: 12px 15px;
+                }
+                .logo { font-size: 1.4rem; }
+                .tabs-nav { gap: 5px; padding: 10px 15px 0; }
+                .tab-link { padding: 8px 12px; font-size: 0.8rem; }
+                .tab-content { padding: 15px; }
+                #map { height: 55vh; min-height: 300px; }
+                
+                /* Tabel Responsif */
+                .neo-table th:nth-child(3), .neo-table td:nth-child(3),
+                .neo-table th:nth-child(5), .neo-table td:nth-child(5) {
+                    display: none; /* Sembunyikan Telp & Waktu di HP */
+                }
             }
         </style>
     </head>
@@ -315,9 +357,12 @@
 
         <!-- TAB 2: KELOLA PENDAKI -->
         <main id="tab-pendaki" class="tab-content">
-            <div class="neo-card" style="display: flex; justify-content: space-between; align-items: center; background: var(--blue); color: white;">
+            <div class="neo-card" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="text-transform: uppercase; font-weight: 900;">Daftar Riwayat Pendakian</h2>
-                <button class="neo-btn" style="background: var(--green);" onclick="openModal()">➕ Daftarkan Pendaki</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="neo-btn neo-btn-green" onclick="exportCSV()">📥 Export CSV</button>
+                    <button class="neo-btn" onclick="openModal()">➕ Daftarkan Pendaki</button>
+                </div>
             </div>
 
             <div class="neo-card" style="display: flex; gap: 15px;">
@@ -331,16 +376,16 @@
 
             <div class="neo-table-container">
                 <table class="neo-table">
-                    <thead>
-                        <tr>
-                            <th>Nama</th>
-                            <th>ID Alat</th>
-                            <th>Telp Darurat</th>
-                            <th>Status</th>
-                            <th>Waktu Naik</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Alat</th>
+                                    <th class="hide-mobile">Telepon</th>
+                                    <th>Status</th>
+                                    <th class="hide-mobile">Waktu Naik</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
                     <tbody id="history-table-body">
                         <!-- Data rows injected by JS -->
                     </tbody>
@@ -351,26 +396,74 @@
         <!-- MODAL REGISTRASI -->
         <div id="modal-registrasi" class="modal-overlay">
             <div class="modal-content">
-                <h2 style="margin-bottom: 25px; text-transform: uppercase; font-weight: 900;">Registrasi Pendaki</h2>
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; font-weight: 700;">Nama Lengkap</label>
-                        <input type="text" id="reg-nama" class="neo-input" placeholder="Contoh: Andi Wijaya">
+                <h2 id="modal-title" style="text-transform: uppercase; font-weight: 900; margin-bottom: 25px;">Registrasi Pendaki</h2>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 900; display: block; margin-bottom: 5px;">Nama Lengkap</label>
+                    <input type="text" id="reg-nama" class="neo-input" placeholder="Contoh: Ahmad Subarjo">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 900; display: block; margin-bottom: 5px;">ID Perangkat</label>
+                    <select id="reg-id-perangkat" class="neo-input" style="background: white;">
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <label style="font-weight: 900; display: block; margin-bottom: 5px;">Telepon Darurat</label>
+                    <input type="text" id="reg-telp" class="neo-input" placeholder="0812xxxxxx">
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button id="btn-simpan" class="neo-btn neo-btn-green" style="flex: 1;">✔️ SIMPAN DATA</button>
+                    <button class="neo-btn neo-btn-red" onclick="closeModal()">BATAL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DETAIL JALUR -->
+        <div id="modal-detail" class="modal-overlay">
+            <div class="modal-content" style="max-width: 800px;">
+                <h2 style="text-transform: uppercase; font-weight: 900; margin-bottom: 20px;">Detail Perjalanan</h2>
+                
+                <div class="dashboard-grid" style="grid-template-columns: 1fr 250px; height: 400px; gap: 20px;">
+                    <div id="mini-map" style="border: 3px solid var(--black); height: 100%;"></div>
+                    <div class="sidebar" style="background: var(--white); border: 3px solid var(--black); padding: 15px;">
+                        <h3 style="font-size: 0.9rem; margin-bottom: 15px;">STATISTIK</h3>
+                        <div id="detail-stats" style="font-weight: 700; font-size: 0.85rem;">
+                            <p style="margin-bottom: 10px;">Jarak: <span id="stat-dist">-</span> km</p>
+                            <p style="margin-bottom: 10px;">Mulai: <br><span id="stat-start" style="font-size: 0.75rem; color: #555;">-</span></p>
+                            <p style="margin-bottom: 10px;">Status: <br><span id="stat-status">-</span></p>
+                        </div>
+                        <hr style="margin: 15px 0; border: 1px dashed var(--black);">
+                        <div id="detail-hiker-info" style="font-size: 0.8rem;">
+                            <p>Pendaki: <br><b id="detail-nama">-</b></p>
+                        </div>
                     </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; font-weight: 700;">ID Perangkat</label>
-                        <select id="reg-id-perangkat" class="neo-input">
-                            <!-- Injected by JS -->
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; font-weight: 700;">Telepon Darurat</label>
-                        <input type="text" id="reg-telp" class="neo-input" placeholder="08xxxxxxxxxx">
-                    </div>
-                    <div style="display: flex; gap: 15px; margin-top: 10px;">
-                        <button class="neo-btn neo-btn-green" style="flex: 1;" onclick="submitRegistrasi()">✅ Simpan Data</button>
-                        <button class="neo-btn neo-btn-red" onclick="closeModal()">Batal</button>
-                    </div>
+                </div>
+
+                <div style="margin-top: 25px; text-align: right;">
+                    <button class="neo-btn neo-btn-blue" onclick="closeDetailModal()">TUTUP</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="notif-request" class="notification-request">
+            <p style="font-weight: 700; font-size: 0.9rem;">🔔 Aktifkan notifikasi browser untuk peringatan keluar jalur?</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="neo-btn neo-btn-sm neo-btn-green" onclick="requestNotif()">Izinkan</button>
+                <button class="neo-btn neo-btn-sm neo-btn-red" onclick="this.parentElement.parentElement.style.display='none'">Nanti</button>
+            </div>
+        </div>
+
+        <!-- MODAL KONFIRMASI -->
+        <div id="modal-confirm" class="modal-overlay">
+            <div class="modal-content" style="max-width: 400px; text-align: center;">
+                <h2 id="confirm-title" style="margin-bottom: 15px;">KONFIRMASI</h2>
+                <p id="confirm-msg" style="font-weight: 700; margin-bottom: 25px;"></p>
+                <div style="display: flex; gap: 15px;">
+                    <button id="confirm-yes" class="neo-btn neo-btn-red" style="flex: 1;">YA, LANJUTKAN</button>
+                    <button class="neo-btn" style="flex: 1;" onclick="closeConfirm()">BATAL</button>
                 </div>
             </div>
         </div>
@@ -493,17 +586,50 @@
             initGeoData();
 
             // --- TAB LOGIC ---
-            function openTab(tabId) {
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
-                document.getElementById(tabId).classList.add('active');
-                event.currentTarget.classList.add('active');
-                
-                if (tabId === 'tab-live') setTimeout(() => map.invalidateSize(), 200);
-                if (tabId === 'tab-pendaki') fetchHistory();
-            }
+            function openTab(tabId, el) {
+                document.querySelectorAll(".tab-content").forEach((tab) => {
+                    tab.classList.remove("active");
+                });
+                document.querySelectorAll(".tab-link").forEach((link) => {
+                    link.classList.remove("active");
+                });
 
-            // --- TOAST LOGIC ---
+                document.getElementById(tabId).classList.add("active");
+                el.classList.add("active");
+
+            if (tabId === 'tab-live') setTimeout(() => map.invalidateSize(), 200);
+            if (tabId === 'tab-pendaki') fetchHistory();
+        }
+
+        // --- NOTIFICATION LOGIC ---
+        function requestNotif() {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    showToast("Notifikasi diizinkan!", "success");
+                    document.getElementById('notif-request').style.display = 'none';
+                }
+            });
+        }
+
+        function sendNotification(title, body) {
+            if (Notification.permission === "granted") {
+                new Notification(title, {
+                    body: body,
+                    icon: "⛰️"
+                });
+            }
+        }
+
+        // Check permission on load
+        window.addEventListener('load', () => {
+            if (Notification.permission === "default") {
+                setTimeout(() => {
+                    document.getElementById('notif-request').style.display = 'flex';
+                }, 3000);
+            }
+        });
+
+        // --- TOAST LOGIC ---
             function showToast(msg, type = 'info') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
@@ -517,10 +643,15 @@
 
             // --- MODAL LOGIC ---
             function openModal() {
+                editingId = null;
+                document.getElementById('modal-title').innerText = "REGISTRASI PENDAKI";
+                document.getElementById('reg-nama').value = "";
+                document.getElementById('reg-telp').value = "";
+                document.getElementById('btn-simpan').onclick = submitRegistrasi;
+
                 const select = document.getElementById('reg-id-perangkat');
                 select.innerHTML = '<option value="">-- Pilih Perangkat --</option>';
                 
-                // Cari perangkat yang online tapi belum dipakai
                 const onlineIds = Object.keys(latestDataPerDevice);
                 const usedIds = Object.keys(registeredHikers);
                 const available = onlineIds.filter(id => !usedIds.includes(id));
@@ -537,6 +668,20 @@
 
             function closeModal() {
                 document.getElementById('modal-registrasi').style.display = 'none';
+            }
+
+            function closeConfirm() {
+                document.getElementById('modal-confirm').style.display = 'none';
+            }
+
+            function showConfirm(title, msg, onConfirm) {
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-msg').innerText = msg;
+                document.getElementById('modal-confirm').style.display = 'flex';
+                document.getElementById('confirm-yes').onclick = () => {
+                    onConfirm();
+                    closeConfirm();
+                };
             }
 
             // --- API ACTIONS ---
@@ -588,46 +733,127 @@
                     <tr>
                         <td>${p.nama_pendaki}</td>
                         <td><span class="neo-badge" style="background: var(--yellow);">${p.id_perangkat}</span></td>
-                        <td>${p.telepon_darurat}</td>
+                        <td class="hide-mobile">${p.telepon_darurat}</td>
                         <td>
                             <span class="neo-badge" style="background: ${p.status === 'Mendaki' ? 'var(--green)' : 'var(--gray)'}">
                                 ${p.status}
                             </span>
                         </td>
-                        <td>${new Date(p.tanggal_naik).toLocaleString('id-ID')}</td>
+                        <td class="hide-mobile">${new Date(p.tanggal_naik).toLocaleString('id-ID')}</td>
                         <td>
-                            ${p.status === 'Mendaki' ? 
-                                `<button class="neo-btn neo-btn-sm neo-btn-blue" onclick="selesaikanPendakian('${p.id_perangkat}')">✅ Selesai</button>` 
-                                : '—'}
+                            <div style="display: flex; gap: 5px;">
+                                ${p.status === 'Mendaki' ? 
+                                    `<button class="neo-btn neo-btn-sm neo-btn-blue" onclick="selesaikanPendakian('${p.id_perangkat}')">✅ Selesai</button>` 
+                                    : `<button class="neo-btn neo-btn-sm neo-btn-red" onclick="deletePendaki(${p.id})">🗑️</button>`}
+                                <button class="neo-btn neo-btn-sm" onclick="openEditModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">✏️</button>
+                                <button class="neo-btn neo-btn-sm neo-btn-green" onclick="viewJourneyDetail(${JSON.stringify(p).replace(/"/g, '&quot;')})">🗺️</button>
+                            </div>
                         </td>
                     </tr>
                 `).join('');
             }
 
-            async function selesaikanPendakian(idAlat) {
-                if (!confirm("Konfirmasi pendaki sudah turun?")) return;
+            async function deletePendaki(id) {
+                showConfirm("HAPUS DATA", "Hapus permanen data pendaki ini dari riwayat?", async () => {
+                    try {
+                        const res = await fetch(`/api/pendaki/${id}`, { method: "DELETE" });
+                        if (res.ok) {
+                            showToast("✅ Data dihapus", "success");
+                            fetchHistory();
+                        }
+                    } catch (e) { showToast("Gagal menghapus", "error"); }
+                });
+            }
+
+            let editingId = null;
+            function openEditModal(p) {
+                editingId = p.id;
+                document.getElementById('modal-title').innerText = "EDIT DATA PENDAKI";
+                document.getElementById('reg-nama').value = p.nama_pendaki;
+                document.getElementById('reg-telp').value = p.telepon_darurat;
+                
+                const select = document.getElementById('reg-id-perangkat');
+                select.innerHTML = `<option value="${p.id_perangkat}">${p.id_perangkat} (Saat ini)</option>`;
+                
+                document.getElementById('modal-registrasi').style.display = 'flex';
+                document.getElementById('btn-simpan').onclick = submitEdit;
+            }
+
+            async function submitEdit() {
+                const nama = document.getElementById('reg-nama').value;
+                const idAlat = document.getElementById('reg-id-perangkat').value;
+                const telp = document.getElementById('reg-telp').value;
+
                 try {
-                    const res = await fetch(`/api/pendaki/${idAlat}/selesai`, { method: "PUT" });
+                    const res = await fetch(`/api/pendaki/${editingId}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ nama_pendaki: nama, id_perangkat: idAlat, telepon_darurat: telp })
+                    });
                     if (res.ok) {
-                        showToast("Pendakian diselesaikan", "success");
+                        showToast("✅ Perubahan Disimpan!", "success");
+                        closeModal();
                         fetchPendakiAktif();
                         fetchHistory();
                     }
-                } catch (e) { showToast("Gagal update", "error"); }
+                } catch (e) { showToast("Gagal menyimpan", "error"); }
+            }
+
+            function exportCSV() {
+                if (historyData.length === 0) return showToast("Tidak ada data untuk dieksport", "error");
+                const headers = ["Nama", "ID Alat", "Telepon", "Status", "Waktu Naik"];
+                const rows = historyData.map(p => [
+                    p.nama_pendaki, p.id_perangkat, p.telepon_darurat, p.status, p.tanggal_naik
+                ]);
+                
+                let csvContent = "data:text/csv;charset=utf-8," 
+                    + headers.join(",") + "\n"
+                    + rows.map(e => e.join(",")).join("\n");
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `riwayat_altivex_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            }
+
+            async function selesaikanPendakian(idAlat) {
+                showConfirm("KONFIRMASI TURUN", `Apakah pendaki dengan alat ${idAlat} sudah benar-benar kembali ke basecamp?`, async () => {
+                    try {
+                        const res = await fetch(`/api/pendaki/${idAlat}/selesai`, { method: "PUT" });
+                        if (res.ok) {
+                            showToast("✅ Pendakian diselesaikan", "success");
+                            fetchPendakiAktif();
+                            fetchHistory();
+                            fetchInitialSensorData();
+                        } else {
+                            showToast("❌ Gagal update status", "error");
+                        }
+                    } catch (e) { showToast("❌ Gagal update (Koneksi)", "error"); }
+                });
             }
 
             // --- LIVE UPDATE LOGIC ---
+            let renderTimeout = null;
             function renderHikerCards() {
+                if (renderTimeout) clearTimeout(renderTimeout);
+                renderTimeout = setTimeout(() => {
+                    _renderHikerCards();
+                }, 500);
+            }
+
+            function _renderHikerCards() {
                 let alertHTML = "";
                 let availHTML = "";
 
                 for (let id in latestDataPerDevice) {
                     const data = latestDataPerDevice[id];
                     const point = turf.point([data.longitude, data.latitude]);
-                    const isInside = geofenceBuffer ? turf.booleanPointInPolygon(point, geofenceBuffer) : true; // aman jika data belum dimuat
+                    const isInside = geofenceBuffer ? turf.booleanPointInPolygon(point, geofenceBuffer) : true;
                     const hiker = registeredHikers[id];
 
-                    // Update Marker
                     if (!activeMarkers[id]) {
                         activeMarkers[id] = L.marker([data.latitude, data.longitude]).addTo(map);
                     } else {
@@ -639,8 +865,13 @@
                         activeMarkers[id].bindPopup(`<b>${hiker.nama_pendaki}</b><br>ID: ${id}<br>Status: ${isInside ? 'Aman' : 'KELUAR JALUR'}`);
                         
                         if (!isInside) {
+                            if (!latestDataPerDevice[id].notified) {
+                                sendNotification("⚠️ PERINGATAN KELUAR JALUR", `${hiker.nama_pendaki} terpantau keluar dari koridor pendakian!`);
+                                latestDataPerDevice[id].notified = true;
+                            }
+
                             alertHTML += `
-                                <div class="neo-card" style="border-left: 10px solid var(--red); padding: 15px;">
+                                <div class="neo-card" style="border-left: 10px solid var(--red); padding: 15px; animation: pulse 2s infinite;">
                                     <div style="font-weight: 900; font-size: 1.1rem;">⚠️ ${hiker.nama_pendaki.toUpperCase()}</div>
                                     <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 10px;">ID: ${id} | Telp: ${hiker.telepon_darurat}</div>
                                     <div class="neo-badge" style="background: var(--red); color: white; margin-bottom: 10px;">KELUAR KORIDOR</div>
@@ -650,6 +881,8 @@
                                     </div>
                                 </div>
                             `;
+                        } else {
+                            latestDataPerDevice[id].notified = false;
                         }
                     } else {
                         activeMarkers[id].bindPopup(`<b>PERANGKAT: ${id}</b><br>Belum terdaftar`);
@@ -685,16 +918,73 @@
 
             async function toggleHistory(id) {
                 if (activePolylines[id]) {
-                    map.removeLayer(activePolylines[id]);
+                    map.removeLayer(activePolylines[id].poly);
+                    activePolylines[id].markers.forEach(m => map.removeLayer(m));
                     delete activePolylines[id];
                 } else {
                     const res = await fetch(`/api/history/${id}`);
                     const data = await res.json();
+                    if (data.length === 0) return showToast("Tidak ada data history", "error");
+                    
                     const latlngs = data.map(p => [p.latitude, p.longitude]);
-                    const poly = L.polyline(latlngs, { color: 'var(--blue)', weight: 4, dashArray: '10, 10' }).addTo(map);
-                    activePolylines[id] = poly;
+                    const poly = L.polyline(latlngs, { 
+                        color: 'var(--blue)', 
+                        weight: 6, 
+                        dashArray: '10, 10',
+                        opacity: 0.7
+                    }).addTo(map);
+
+                    const startIcon = L.divIcon({ html: '🟢', className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
+                    const endIcon = L.divIcon({ html: '🚩', className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
+                    
+                    const startMarker = L.marker(latlngs[0], { icon: startIcon }).addTo(map).bindPopup("Titik Mulai");
+                    const endMarker = L.marker(latlngs[latlngs.length - 1], { icon: endIcon }).addTo(map).bindPopup("Posisi Terakhir");
+
+                    activePolylines[id] = { poly, markers: [startMarker, endMarker] };
                     map.fitBounds(poly.getBounds());
                 }
+            }
+
+            let miniMap = null;
+            async function viewJourneyDetail(p) {
+                document.getElementById('detail-nama').innerText = p.nama_pendaki;
+                document.getElementById('stat-start').innerText = new Date(p.tanggal_naik).toLocaleString('id-ID');
+                document.getElementById('stat-status').innerText = p.status;
+                document.getElementById('modal-detail').style.display = 'flex';
+
+                if (!miniMap) {
+                    miniMap = L.map("mini-map").setView(posJagaLatLng, 13);
+                    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(miniMap);
+                } else {
+                    miniMap.eachLayer(l => { 
+                        if(l instanceof L.Marker || l instanceof L.Polyline) miniMap.removeLayer(l); 
+                    });
+                }
+
+                setTimeout(async () => {
+                    miniMap.invalidateSize();
+                    try {
+                        const res = await fetch(`/api/history/${p.id_perangkat}`);
+                        const data = await res.json();
+                        if (data.length > 1) {
+                            const latlngs = data.map(d => [d.latitude, d.longitude]);
+                            const line = turf.lineString(data.map(d => [d.longitude, d.latitude]));
+                            const distance = turf.length(line, {units: 'kilometers'}).toFixed(2);
+                            document.getElementById('stat-dist').innerText = distance;
+                            const poly = L.polyline(latlngs, { color: 'var(--blue)', weight: 5 }).addTo(miniMap);
+                            L.marker(latlngs[0]).addTo(miniMap).bindPopup("Mulai");
+                            L.marker(latlngs[latlngs.length-1]).addTo(miniMap).bindPopup("Posisi Terakhir");
+                            miniMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
+                        } else {
+                            document.getElementById('stat-dist').innerText = "0";
+                            miniMap.setView(posJagaLatLng, 15);
+                        }
+                    } catch(e) { console.error(e); }
+                }, 300);
+            }
+
+            function closeDetailModal() {
+                document.getElementById('modal-detail').style.display = 'none';
             }
 
             // --- SEARCH & FILTER ---
@@ -753,11 +1043,9 @@
                 try {
                     const response = await fetch("/api/sensor");
                     const data = await response.json();
-                    // Gunakan data terbaru untuk setiap perangkat
+                    // FIX BUG: Timpa data lama dengan data terbaru agar koordinat update
                     data.forEach(d => {
-                        if (!latestDataPerDevice[d.id_perangkat]) {
-                            latestDataPerDevice[d.id_perangkat] = d;
-                        }
+                        latestDataPerDevice[d.id_perangkat] = d;
                     });
                     renderHikerCards();
                 } catch(e) { console.error("Gagal fetch initial sensor:", e); }
