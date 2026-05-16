@@ -533,7 +533,7 @@ async fn main() -> std::io::Result<()> {
             .route("/ws", web::get().to(ws_index))
             .service(Files::new("/", "./frontend").index_file("index.html"))
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }
