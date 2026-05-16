@@ -765,8 +765,11 @@
 
             // --- INIT ---
             setInterval(checkStatuses, 5000);
+            setInterval(fetchInitialSensorData, 5000); // AUTO-SYNC: Cek data terbaru tiap 5 detik
+            setInterval(fetchPendakiAktif, 10000);     // Update daftar pendaki tiap 10 detik
+            
             checkStatuses();
-            fetchInitialSensorData(); // Ambil data terakhir agar muncul di dropdown
+            fetchInitialSensorData(); 
             fetchPendakiAktif();
             connectWebSocket();
         </script>

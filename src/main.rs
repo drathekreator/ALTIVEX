@@ -457,7 +457,12 @@ async fn main() -> std::io::Result<()> {
     .await
     .expect("Gagal membuat tabel pendaki");
 
-    println!("✅ Database siap. Tabel log_sensor dan pendaki tersedia.");
+    // MIGRASI: Tambahkan kolom telepon_darurat jika tabel lama belum punya
+    let _ = sqlx::query("ALTER TABLE pendaki ADD COLUMN IF NOT EXISTS telepon_darurat VARCHAR(20) NOT NULL DEFAULT '';")
+        .execute(&pool)
+        .await;
+
+    println!("✅ Database siap. Tabel log_sensor dan pendaki (dengan kolom telepon_darurat) tersedia.");
 
     // Jalankan MQTT Client di background
     let pool_mqtt = pool.clone();
