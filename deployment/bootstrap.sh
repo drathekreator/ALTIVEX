@@ -77,10 +77,13 @@ fi
 
 if [[ "$NEED_GEN_ENV" -eq 1 ]]; then
     POSTGRES_USER="altivex_prod"
-    POSTGRES_PASSWORD=$(openssl rand -base64 18)
+    # Pakai hex 16 byte (32 char) supaya URL-safe — base64 menghasilkan
+    # `/` dan `+` yang harus di-encode di DATABASE_URL atau sqlx panic
+    # `Configuration(InvalidPort)`. Hex aman di URL tanpa encoding.
+    POSTGRES_PASSWORD=$(openssl rand -hex 16)
     POSTGRES_DB="altivex_db"
     MQTT_USERNAME="altivex_prod"
-    MQTT_PASSWORD=$(openssl rand -base64 18)
+    MQTT_PASSWORD=$(openssl rand -hex 16)
     API_AUTH_TOKEN=$(openssl rand -hex 32)
 
     cat > "$ENV_FILE" <<EOF
