@@ -1,14 +1,21 @@
 # ALTIVEX — Deploy ke GCP (post-`git pull` runbook)
 
-Asumsi: Anda sudah punya VM GCP (Compute Engine), domain ter-pointing
-ke IP eksternal VM, dan repo sudah di-clone ke `~/ALTIVEX`.
+Asumsi: VM GCP Compute Engine sudah ada, domain ter-pointing ke IP
+eksternal VM, repo sudah di-clone via `git clone`.
 
-Semua langkah di bawah dijalankan di VM, **setelah** `git pull` di
-folder `~/ALTIVEX/altivex_backend/`.
+> **Path penting**: GitHub repo Anda root-nya BUKAN di folder
+> `altivex_backend/`. Setelah `git clone` di VM, semua file langsung
+> ada di `~/ALTIVEX/` (bukan `~/ALTIVEX/altivex_backend/`). Semua
+> perintah di runbook ini dijalankan dari `~/ALTIVEX/`.
+
+Semua langkah dijalankan di VM **setelah** `git pull` di
+`~/ALTIVEX/`.
 
 ---
 
 ## 0. Prasyarat (sekali per VM)
+
+Jalankan di VM:
 
 ```bash
 # Docker + Docker Compose v2 plugin
@@ -16,17 +23,20 @@ curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker "$USER"
 # Logout + login ulang supaya group `docker` aktif tanpa sudo.
 
-# Verifikasi
 docker --version          # >= 24
 docker compose version    # >= v2.20
+```
 
-# Firewall GCP (jalankan di gcloud lokal Anda, bukan VM):
+Jalankan dari laptop Anda (`gcloud` lokal):
+
+```bash
+# Buka port 80 + 443 di firewall GCP
 gcloud compute firewall-rules create altivex-http \
     --allow tcp:80,tcp:443 \
     --target-tags=http-server,https-server \
     --description="HTTP+HTTPS untuk dashboard ALTIVEX"
 
-# Tag VM (jalankan dari gcloud lokal Anda):
+# Tag VM dengan rule di atas
 gcloud compute instances add-tags <VM_NAME> \
     --zone=<ZONE> \
     --tags=http-server,https-server
@@ -34,44 +44,36 @@ gcloud compute instances add-tags <VM_NAME> \
 
 ---
 
-## 1. Setelah `git pull` — first-time bootstrap
+## 1. First-time deploy
 
 ```bash
-cd ~/ALTIVEX/altivex_backend
+cd ~/ALTIVEX
 
-# Buat .env + mosquitto passwd otomatis dengan secret acak.
-# Idempotent: aman dijalankan ulang.
+# 1.a. Generate .env + mosquitto passwd otomatis dengan secret acak.
+#      Idempotent — aman dijalankan ulang.
+#      Kalau .env existing format lama, akan di-backup lalu regenerate.
 bash deployment/bootstrap.sh
 ```
 
-Output script akan menampilkan `API_AUTH_TOKEN` di terminal. **Simpan
-token ini** — operator akan diminta paste saat buka dashboard
-pertama kali.
-
----
-
-## 2. Edit Caddyfile — ganti domain
+Output script akan menampilkan `API_AUTH_TOKEN` di terminal.
+**Simpan token ini** — operator akan diminta paste saat buka
+dashboard pertama kali.
 
 ```bash
-# Ganti `altivex.example.com` dengan domain Anda yang sudah
-# punya A record ke IP VM ini.
+# 1.b. Edit Caddyfile, ganti `altivex.example.com` ke domain Anda.
 nano deployment/Caddyfile
 ```
 
-Verifikasi DNS sebelum lanjut:
+Verifikasi DNS sudah propagate sebelum lanjut:
 
 ```bash
+# Dari laptop Anda (bukan VM)
 dig +short altivex.your-domain.com
 # Harus return IP eksternal VM Anda.
 ```
 
-Caddy akan tolak issue cert Let's Encrypt kalau DNS belum propagate.
-
----
-
-## 3. Build + run
-
 ```bash
+# 1.c. Build + run produksi.
 docker compose \
     -f docker-compose.yml \
     -f deployment/docker-compose.prod.yml \
@@ -79,63 +81,70 @@ docker compose \
 ```
 
 Build pertama kali: 5-10 menit (compile Rust release dengan deps
-sqlx + actix). Build selanjutnya: 30-60 detik (Docker cache layer
-deps).
-
----
-
-## 4. Verifikasi
+sqlx + actix). Build selanjutnya: 30-60 detik (Docker layer cache).
 
 ```bash
-# Status semua container
-docker compose ps
-
-# Logs backend (tunggu sampai lihat 4 baris ini):
-#   ✅ Database siap.
-#   📡 MQTT Subscriber aktif di topic: altivex/sensor/data (QoS=AtLeastOnce)
-#   🔐 AuthMiddleware aktif untuk endpoint mutating.
-#   🚀 Server ALTIVEX berjalan di http://0.0.0.0:8080
+# 1.d. Cek logs.
 docker compose logs -f backend
+```
 
-# Logs Caddy (tunggu sampai lihat cert obtained):
-#   certificate obtained successfully ... altivex.your-domain.com
+Yang harus muncul (4 baris kunci):
+
+```
+✅ Database siap. Tabel log_sensor dan pendaki ... tersedia.
+📡 MQTT Subscriber aktif di topic: altivex/sensor/data (QoS=AtLeastOnce)
+🔐 AuthMiddleware aktif untuk endpoint mutating.
+🚀 Server ALTIVEX berjalan di http://0.0.0.0:8080
+```
+
+```bash
+# 1.e. Cek Caddy issue cert Let's Encrypt.
 docker compose logs -f caddy
 ```
 
-Sanity test endpoint dari laptop Anda (bukan VM):
+Yang harus muncul:
+
+```
+certificate obtained successfully ... altivex.your-domain.com
+```
+
+---
+
+## 2. Sanity test
+
+Dari **laptop Anda** (bukan VM):
 
 ```bash
 # Public — tidak butuh token
 curl -i https://altivex.your-domain.com/api/status
 
-# Mutating tanpa token → expect 401
+# Mutating tanpa token → 401 Unauthorized
 curl -i -X POST https://altivex.your-domain.com/api/sensor \
     -H "Content-Type: application/json" \
     -d '{"id_perangkat":"TEST","latitude":-6.7,"longitude":106.95}'
 
-# Dengan token → expect 200
+# Dengan token → 200 OK
 curl -i -X POST https://altivex.your-domain.com/api/sensor \
-    -H "Authorization: Bearer $YOUR_API_TOKEN" \
+    -H "Authorization: Bearer YOUR_API_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"id_perangkat":"TEST","latitude":-6.7,"longitude":106.95}'
 ```
 
-Buka `https://altivex.your-domain.com/` di browser. Akan muncul
-prompt minta API token — paste token dari step 1.
+Buka `https://altivex.your-domain.com/` di browser → muncul prompt
+minta API token → paste token dari step 1.a.
 
 ---
 
-## 5. Update setelah `git pull` berikutnya
+## 3. Update setelah `git pull` berikutnya
 
 ```bash
-cd ~/ALTIVEX/altivex_backend
+cd ~/ALTIVEX
 git pull
 
-# Bootstrap idempotent — tidak akan overwrite .env atau passwd.
+# Idempotent — TIDAK akan overwrite .env / passwd kalau sudah lengkap.
 bash deployment/bootstrap.sh
 
-# Build + restart (zero downtime untuk Postgres/Mosquitto, backend
-# akan restart ~2 detik).
+# Build + restart (Postgres/Mosquitto zero-downtime, backend ~2 detik).
 docker compose \
     -f docker-compose.yml \
     -f deployment/docker-compose.prod.yml \
@@ -146,25 +155,28 @@ docker compose logs -f backend
 
 ---
 
-## 6. Operasional
+## 4. Operasional
 
-### Backup database
+### Backup database (manual)
 
 ```bash
+cd ~/ALTIVEX
 docker compose exec postgres pg_dump \
     -U "$(grep POSTGRES_USER .env | cut -d= -f2)" \
     "$(grep POSTGRES_DB .env | cut -d= -f2)" \
     | gzip > "backup-$(date +%Y%m%d-%H%M%S).sql.gz"
 ```
 
-Schedule via cron:
+### Backup database (cron tiap hari jam 02:00, retain 14 hari)
 
 ```bash
-# Edit crontab
 crontab -e
+```
 
-# Tambah baris (backup tiap hari jam 02:00, simpan 14 hari terakhir)
-0 2 * * * cd ~/ALTIVEX/altivex_backend && \
+Tambah baris:
+
+```
+0 2 * * * cd ~/ALTIVEX && \
     docker compose exec -T postgres pg_dump \
     -U "$(grep POSTGRES_USER .env | cut -d= -f2)" \
     "$(grep POSTGRES_DB .env | cut -d= -f2)" \
@@ -175,6 +187,7 @@ crontab -e
 ### Rotasi API token
 
 ```bash
+cd ~/ALTIVEX
 NEW_TOKEN=$(openssl rand -hex 32)
 sed -i "s|^API_AUTH_TOKEN=.*|API_AUTH_TOKEN=$NEW_TOKEN|" .env
 
@@ -184,92 +197,91 @@ docker compose \
     up -d backend
 
 echo "New token: $NEW_TOKEN"
-# Operator dashboard akan dapat 401 → otomatis di-prompt token baru.
+# Browser dashboard akan dapat 401 → otomatis prompt token baru.
 ```
 
 ### Rotasi password MQTT
 
 ```bash
+cd ~/ALTIVEX
 NEW_PWD=$(openssl rand -base64 18)
 USER=$(grep MQTT_USERNAME .env | cut -d= -f2)
 
-# Update .env
 sed -i "s|^MQTT_PASSWORD=.*|MQTT_PASSWORD=$NEW_PWD|" .env
 
-# Regenerate passwd
 docker run --rm -v "$PWD/mosquitto/config:/work" -w /work \
     eclipse-mosquitto:2 \
     mosquitto_passwd -b passwd "$USER" "$NEW_PWD"
 
-# Restart broker + backend
 docker compose \
     -f docker-compose.yml \
     -f deployment/docker-compose.prod.yml \
     up -d mosquitto backend
 ```
 
-### Monitor disk usage
+### Monitor disk usage table `log_sensor`
 
 ```bash
-# Cek growth log_sensor
+cd ~/ALTIVEX
 docker compose exec postgres psql \
     -U "$(grep POSTGRES_USER .env | cut -d= -f2)" \
     "$(grep POSTGRES_DB .env | cut -d= -f2)" \
     -c "SELECT pg_size_pretty(pg_total_relation_size('log_sensor'));"
-
-# Kalau growth terlalu besar, tambah retention policy via pg_cron
-# atau cron job manual yang DELETE WHERE timestamp < NOW() - interval.
 ```
 
 ---
 
 ## Troubleshooting
 
-### Caddy tidak bisa issue cert
+### `cd: No such file or directory`
 
-```
-[ERROR] obtain: ... no IP for hostname
-```
+Anda mungkin pakai path lama dari runbook sebelumnya
+(`~/ALTIVEX/altivex_backend/`). GitHub repo root-nya = `~/ALTIVEX/`,
+tidak ada subfolder `altivex_backend/`. Selalu `cd ~/ALTIVEX`.
 
-DNS belum propagate. Tunggu 5-15 menit, atau cek `dig +short
-altivex.your-domain.com` di laptop Anda.
+### `bootstrap.sh: line ... unbound variable`
 
-```
-[ERROR] obtain: ... acme: error 403 ... port 80 unreachable
-```
-
-Firewall GCP belum buka port 80. Lihat step 0.
-
-### Backend exit dengan "X belum diset di .env"
-
-`.env` hilang atau tidak ter-baca. Re-run bootstrap:
+`.env` Anda format lama (kekurangan variable). Bootstrap script v2
+sekarang auto-deteksi & backup ke `.env.backup-<timestamp>` lalu
+regenerate. Pastikan Anda sudah `git pull` script yang terbaru:
 
 ```bash
-ls -la .env  # harus ada
+cd ~/ALTIVEX
+git pull
 bash deployment/bootstrap.sh
 ```
 
-### MQTT log "bad credentials"
+### `error while interpolating ... POSTGRES_USER belum diset di .env`
 
-`mosquitto/config/passwd` tidak match `MQTT_USERNAME`/`MQTT_PASSWORD`
-di `.env`. Regenerate:
+Compose tidak baca `.env` — ada satu dari dua kemungkinan:
+
+1. `.env` belum lengkap → jalankan ulang `bash deployment/bootstrap.sh`.
+2. Anda jalankan `docker compose ...` dari folder yang BUKAN
+   `~/ALTIVEX` (Compose hanya auto-load `.env` dari cwd). Pastikan
+   `pwd` Anda = `~/ALTIVEX`.
+
+### Caddy `[ERROR] obtain: ... no IP for hostname`
+
+DNS belum propagate. Tunggu 5-15 menit, atau cek:
 
 ```bash
-USER=$(grep MQTT_USERNAME .env | cut -d= -f2)
-PWD=$(grep MQTT_PASSWORD .env | cut -d= -f2)
-docker run --rm -v "$PWD/mosquitto/config:/work" -w /work \
-    eclipse-mosquitto:2 \
-    mosquitto_passwd -b -c passwd "$USER" "$PWD"
-docker compose restart mosquitto
+dig +short altivex.your-domain.com
+# Harus return IP eksternal VM. Kalau kosong, A record belum dibuat
+# atau TTL provider DNS-nya panjang.
 ```
+
+### Caddy `[ERROR] obtain: ... acme: error 403 ... port 80 unreachable`
+
+Firewall GCP belum buka port 80. Lihat step 0.
 
 ### Backend gagal connect ke Postgres saat first-startup
 
-Postgres belum siap saat backend coba connect. Compose sudah punya
-`depends_on: condition: service_healthy`, tapi kalau Postgres butuh
-> 30 detik (mis. VM kecil), backend bisa exit. Jalankan ulang:
+Postgres butuh > 30 detik untuk siap di VM kecil. Compose sudah
+`depends_on: condition: service_healthy`, tapi healthcheck bisa
+timeout. Workaround:
 
 ```bash
+cd ~/ALTIVEX
 docker compose \
     -f docker-compose.yml \
     -f deployment/docker-compose.prod.yml \
@@ -279,10 +291,6 @@ docker compose \
 ### Heltec basecamp tidak terdeteksi
 
 VM cloud TIDAK punya port serial fisik. Failsafe-mode (Serial
-bridge) hanya relevan kalau Anda deploy di hardware on-prem
-(Raspberry Pi / mini-PC) yang dicolok ke Heltec. Untuk deploy GCP
-murni cloud, biarkan reader retry tiap 5 detik tanpa perangkat —
-tidak akan crash, hanya log warning.
-
-Kalau Anda butuh failsafe Serial DI VM cloud, pakai serial-over-IP
-(ser2net + socat) — tapi itu di luar scope deploy ini.
+bridge) hanya relevan di hardware on-prem yang dicolok ke Heltec.
+Untuk deploy GCP murni cloud, biarkan reader retry tiap 5 detik
+tanpa perangkat — backend tidak crash, hanya log warning.

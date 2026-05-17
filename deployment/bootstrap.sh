@@ -1,45 +1,81 @@
 #!/usr/bin/env bash
 # =====================================================================
-# ALTIVEX — One-shot bootstrap script untuk VM GCP yang baru saja
+# ALTIVEX — One-shot bootstrap script untuk VM cloud yang baru saja
 # `git pull`. Jalankan SATU KALI saat first deploy.
 # ---------------------------------------------------------------------
 # Yang dilakukan:
-#   1. Generate `.env` dari template + secret acak (jika belum ada).
-#   2. Generate `mosquitto/config/passwd` (match MQTT_USERNAME +
-#      MQTT_PASSWORD di `.env`).
+#   1. Validasi `.env` (auto-backup + regenerate kalau format lama).
+#   2. Generate `mosquitto/config/passwd` match `MQTT_USERNAME`/
+#      `MQTT_PASSWORD` di `.env`.
 #   3. Pastikan folder `mosquitto/log` + `mosquitto/data` writable
-#      oleh container.
-#   4. Print API token ke stdout supaya operator bisa simpan
-#      (token ini diminta browser saat akses dashboard pertama kali).
+#      oleh container (uid 1883).
+#   4. Print API token ke stdout supaya operator bisa simpan.
 #
 # Cara pakai:
-#   cd ~/ALTIVEX/altivex_backend
+#   cd <repo-root>             # GitHub clone, TIDAK harus altivex_backend
 #   bash deployment/bootstrap.sh
 #
-# Idempotent: aman dijalankan ulang. Kalau `.env` sudah ada,
-# script akan SKIP regenerate (supaya secret tidak berubah).
+# Idempotent: aman dijalankan ulang. Kalau `.env` sudah ada DAN sudah
+# format baru, script tidak akan regenerate (secret tidak berubah).
 # =====================================================================
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."  # cwd → altivex_backend/
+# Pindah ke parent dari script ini (= repo root) supaya path relatif
+# konsisten apa pun cwd pemanggil.
+cd "$(dirname "$(readlink -f "$0")")/.."
 
 ENV_FILE=".env"
 PASSWD_FILE="mosquitto/config/passwd"
 
-# ---------------------------------------------------------------------
-# 1. Generate .env (idempotent — skip kalau sudah ada).
-# ---------------------------------------------------------------------
-if [[ -f "$ENV_FILE" ]]; then
-    echo "✅ .env sudah ada, skip generate."
-    # Baca nilai existing supaya bisa regenerate passwd kalau perlu.
-    # shellcheck disable=SC1090
-    source <(grep -E '^(MQTT_USERNAME|MQTT_PASSWORD|API_AUTH_TOKEN)=' "$ENV_FILE")
-else
-    echo "📝 Generate .env baru dengan secret acak..."
+# Daftar variable wajib di `.env`. Kalau salah satu hilang, file
+# dianggap "format lama" → di-backup + regenerate.
+REQUIRED_VARS=(
+    "DATABASE_URL"
+    "POSTGRES_USER"
+    "POSTGRES_PASSWORD"
+    "POSTGRES_DB"
+    "MQTT_BROKER_HOST"
+    "MQTT_BROKER_PORT"
+    "MQTT_USERNAME"
+    "MQTT_PASSWORD"
+    "API_AUTH_TOKEN"
+)
 
-    # Secret yang aman: openssl rand. base64 utk password (length pendek
-    # tapi entropy tinggi), hex utk token (audit trail mudah).
+# ---------------------------------------------------------------------
+# Helper: cek apakah .env punya semua variable wajib.
+# ---------------------------------------------------------------------
+env_is_complete() {
+    local missing=()
+    local var
+    for var in "${REQUIRED_VARS[@]}"; do
+        if ! grep -qE "^${var}=" "$ENV_FILE"; then
+            missing+=("$var")
+        fi
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo "⚠️  .env kekurangan variable: ${missing[*]}"
+        return 1
+    fi
+    return 0
+}
+
+# ---------------------------------------------------------------------
+# 1. Generate .env.
+# ---------------------------------------------------------------------
+NEED_GEN_ENV=0
+if [[ ! -f "$ENV_FILE" ]]; then
+    echo "📝 .env belum ada, generate baru..."
+    NEED_GEN_ENV=1
+elif ! env_is_complete; then
+    BACKUP=".env.backup-$(date +%Y%m%d-%H%M%S)"
+    echo "📦 .env format lama / kekurangan var. Backup ke $BACKUP, lalu regenerate."
+    cp "$ENV_FILE" "$BACKUP"
+    chmod 600 "$BACKUP"
+    NEED_GEN_ENV=1
+fi
+
+if [[ "$NEED_GEN_ENV" -eq 1 ]]; then
     POSTGRES_USER="altivex_prod"
     POSTGRES_PASSWORD=$(openssl rand -base64 18)
     POSTGRES_DB="altivex_db"
@@ -68,12 +104,26 @@ RUST_LOG=info
 EOF
     chmod 600 "$ENV_FILE"
     echo "✅ .env created (chmod 600)."
+else
+    echo "✅ .env sudah lengkap, skip regenerate."
 fi
+
+# ---------------------------------------------------------------------
+# Read final .env values (always, supaya step berikutnya konsisten).
+# ---------------------------------------------------------------------
+# shellcheck disable=SC1090
+source <(grep -E '^(MQTT_USERNAME|MQTT_PASSWORD|API_AUTH_TOKEN)=' "$ENV_FILE")
+
+# Sanity check — kalau setelah generate masih kosong, ada bug script.
+: "${MQTT_USERNAME:?bootstrap bug: MQTT_USERNAME tidak ter-set di .env}"
+: "${MQTT_PASSWORD:?bootstrap bug: MQTT_PASSWORD tidak ter-set di .env}"
+: "${API_AUTH_TOKEN:?bootstrap bug: API_AUTH_TOKEN tidak ter-set di .env}"
 
 # ---------------------------------------------------------------------
 # 2. Generate mosquitto/config/passwd.
 # ---------------------------------------------------------------------
 mkdir -p mosquitto/config mosquitto/data mosquitto/log
+
 if [[ -f "$PASSWD_FILE" ]] && grep -q "^${MQTT_USERNAME}:" "$PASSWD_FILE"; then
     echo "✅ mosquitto passwd sudah ada untuk user '$MQTT_USERNAME', skip regenerate."
 else
@@ -88,9 +138,11 @@ fi
 # ---------------------------------------------------------------------
 # 3. Permission untuk volume data/log Mosquitto.
 # ---------------------------------------------------------------------
-# eclipse-mosquitto image jalan sebagai uid 1883.
-chown -R 1883:1883 mosquitto/data mosquitto/log 2>/dev/null || \
+# eclipse-mosquitto image jalan sebagai uid 1883 — folder mounted dari
+# host harus writable oleh uid itu.
+if ! chown -R 1883:1883 mosquitto/data mosquitto/log 2>/dev/null; then
     sudo chown -R 1883:1883 mosquitto/data mosquitto/log
+fi
 
 # ---------------------------------------------------------------------
 # 4. Print API token + langkah berikutnya.
