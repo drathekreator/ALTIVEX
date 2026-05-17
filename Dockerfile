@@ -6,7 +6,7 @@
 # - Runtime image slim (debian-bookworm) — hanya bawa biner + frontend.
 # =====================================================================
 
-FROM rust:1.82-bookworm AS builder
+FROM rust:1.90-bookworm AS builder
 
 WORKDIR /app
 
