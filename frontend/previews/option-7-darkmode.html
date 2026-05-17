@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ALTIVEX | Preview #7 — Dark Mode</title>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../dashboard.css" />
+
+        <style>
+            /* ============================================================
+               PREVIEW-ONLY STYLES (Option #7 — Dark Mode)
+               ------------------------------------------------------------
+               Override CSS variables saat ada class `dark-mode` di body.
+               Border tetap solid + box-shadow tetap, tapi kontrasnya
+               dibalik: hitam jadi krim, krim jadi mendekati hitam.
+               ============================================================ */
+
+            body.dark-mode {
+                --black: #f5f1e6;
+                --white: #1a1a1a;
+                --bg:    #0e0e10;
+                --gray:  #2b2b2b;
+                --shadow:    5px 5px 0px 0px var(--black);
+                --shadow-sm: 3px 3px 0px 0px var(--black);
+                /* Warna semantik tetap, tapi sedikit di-redshift agar
+                   kontras vs background gelap. */
+                --yellow: #FFD600;
+                --green:  #00E676;
+                --red:    #FF5375;
+                --blue:   #5C9BFF;
+
+                background: var(--bg);
+                color: var(--black);
+            }
+
+            body.dark-mode header,
+            body.dark-mode .neo-card,
+            body.dark-mode .neo-table-container,
+            body.dark-mode .modal-content {
+                background: #1a1a1a;
+                color: var(--black);
+            }
+
+            body.dark-mode .standby-card { background: #232323; }
+
+            body.dark-mode .neo-table th { background: #2c2c2c; }
+
+            body.dark-mode .toast { background: #1a1a1a; color: var(--black); }
+
+            /* Toggle button (preview only). */
+            .preview-frame {
+                padding: 30px;
+            }
+
+            .theme-toggle {
+                background: var(--yellow);
+                border: 3px solid var(--black);
+                box-shadow: var(--shadow-sm);
+                padding: 8px 18px;
+                font-weight: 800;
+                font-family: inherit;
+                cursor: pointer;
+                margin-bottom: 18px;
+                text-transform: uppercase;
+            }
+
+            .preview-mock-map {
+                height: 300px;
+                background: linear-gradient(135deg, #1f3a26 0%, #0e2d3d 100%);
+                border: 4px solid var(--black);
+                box-shadow: var(--shadow);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                color: rgba(245,241,230,0.4);
+            }
+
+            body:not(.dark-mode) .preview-mock-map {
+                background: linear-gradient(135deg, #cfe9d5 0%, #b9d8e6 100%);
+                color: rgba(0,0,0,0.4);
+            }
+
+            .preview-note {
+                margin-top: 20px;
+                padding: 14px 20px;
+                background: rgba(255,214,0,0.12);
+                border: 3px dashed var(--black);
+                font-size: 0.85rem;
+                font-weight: 700;
+                line-height: 1.5;
+            }
+        </style>
+    </head>
+    <body class="dark-mode">
+        <header>
+            <div class="logo">
+                <span>⛰️</span> ALTIVEX
+            </div>
+            <div class="header-status-group">
+                <div class="neo-badge badge-white"><span class="dot dot-green"></span> Basecamp Online</div>
+                <div class="neo-badge badge-white"><span class="dot dot-green"></span> Cloud Synced</div>
+            </div>
+        </header>
+
+        <div class="preview-frame">
+            <button class="theme-toggle" id="theme-toggle">🌗 Toggle Theme</button>
+
+            <h1 style="font-weight:900; text-transform:uppercase; margin-bottom:6px;">Preview Option #7</h1>
+            <p style="font-weight:700; opacity:0.7; margin-bottom:18px;">Dark mode untuk operator dinas malam</p>
+
+            <!-- Banner alert in-app (kondisi 2 pendaki keluar). -->
+            <div class="map-alert-banner" role="button" tabindex="0">
+                <span class="map-alert-banner__icon">⚠️</span>
+                <span class="map-alert-banner__text">2 pendaki di luar koridor</span>
+                <button type="button" class="map-alert-banner__cta">Lihat</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: minmax(0, 2fr) 320px; gap:20px;">
+                <div class="preview-mock-map">[ Peta Live di sini — tile gelap ]</div>
+                <aside style="display:flex; flex-direction:column; gap:12px;">
+                    <div class="neo-card alert-card">
+                        <div class="alert-card__name">⚠️ AHMAD SUBARJO</div>
+                        <div class="alert-card__meta">ID: ALAT-001 | Telp: 081200000000</div>
+                        <span class="neo-badge badge-keluar">KELUAR KORIDOR</span>
+                        <div class="alert-card__actions" style="margin-top:8px;">
+                            <button class="neo-btn neo-btn-sm neo-btn-red">🔔 ALERT</button>
+                            <button class="neo-btn neo-btn-sm">🗺️ PATH</button>
+                        </div>
+                    </div>
+                    <div class="neo-card alert-card">
+                        <div class="alert-card__name">⚠️ DEWI LESTARI</div>
+                        <div class="alert-card__meta">ID: ALAT-002 | Telp: 081300000000</div>
+                        <span class="neo-badge badge-keluar">KELUAR KORIDOR</span>
+                        <div class="alert-card__actions" style="margin-top:8px;">
+                            <button class="neo-btn neo-btn-sm neo-btn-red">🔔 ALERT</button>
+                            <button class="neo-btn neo-btn-sm">🗺️ PATH</button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <div class="preview-note">
+                <b>Yang berubah dibanding versi sekarang:</b>
+                <ul style="margin-top:8px; margin-left:24px; font-weight:600; line-height:1.7;">
+                    <li>Toggle 🌗 di header (atau setting modal). Pilihan tersimpan di <code>localStorage["ALTIVEX_THEME"]</code>.</li>
+                    <li>Implementasi: override CSS variable saat <code>body.dark-mode</code> aktif. Border + shadow + bentuk semua tetap.</li>
+                    <li>Map tile bisa di-switch ke versi gelap (CartoDB Dark Matter) saat dark-mode → kontras polyline pendaki tetap kuat.</li>
+                    <li>Auto mode opsional: cek <code>prefers-color-scheme: dark</code> untuk default.</li>
+                </ul>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+            });
+        </script>
+    </body>
+</html>

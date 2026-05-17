@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ALTIVEX | Preview #3 — Header lebih informatif</title>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../dashboard.css" />
+
+        <style>
+            /* ============================================================
+               PREVIEW-ONLY STYLES (Option #3)
+               ------------------------------------------------------------
+               Hanya berlaku di file ini. Kalau opsi disetujui, kelas di
+               sini akan dipindah ke dashboard.css dan markup ke
+               index.html.
+               ============================================================ */
+
+            /* Header dipecah jadi tiga grup: brand, status (kanan),
+               timestamp (sub-bar). */
+            header.header--enhanced {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 0;
+            }
+
+            .header__top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 14px 30px;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .header__bottom {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 30px;
+                background: #fafafa;
+                border-top: 2px solid var(--black);
+                font-size: 0.78rem;
+                font-weight: 700;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .status-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: var(--white);
+                border: 2px solid var(--black);
+                padding: 4px 10px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                line-height: 1.4;
+            }
+
+            .status-chip--ok    { background: #E8FFF2; }
+            .status-chip--warn  { background: #FFF7E0; }
+            .status-chip--down  { background: #FFE8EC; color: #B00020; }
+            .status-chip--idle  { background: #f0f0f0; color: #555; }
+
+            .status-chip__dot {
+                width: 8px;
+                height: 8px;
+                border: 1px solid var(--black);
+                border-radius: 50%;
+            }
+
+            .status-chip__dot--ok   { background: var(--green); }
+            .status-chip__dot--warn { background: #FFB000; }
+            .status-chip__dot--down { background: var(--red); }
+            .status-chip__dot--idle { background: #999; }
+
+            .header__last-update {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: #666;
+            }
+
+            .header__last-update b {
+                color: var(--black);
+                font-variant-numeric: tabular-nums;
+            }
+
+            /* Mock peta backdrop. */
+            .preview-frame {
+                padding: 30px;
+                background: var(--bg);
+            }
+
+            .preview-mock-map {
+                height: 320px;
+                background: linear-gradient(135deg, #cfe9d5 0%, #b9d8e6 100%);
+                border: 4px solid var(--black);
+                box-shadow: var(--shadow);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                color: rgba(0,0,0,0.4);
+                font-size: 0.9rem;
+            }
+
+            .preview-note {
+                margin-top: 20px;
+                padding: 14px 20px;
+                background: #fffbe0;
+                border: 3px dashed var(--black);
+                font-size: 0.85rem;
+                font-weight: 700;
+                line-height: 1.5;
+            }
+
+            /* Variant toggler — biar Anda lihat 3 keadaan: semua ok,
+               degraded, down. */
+            .variant-tabs {
+                display: flex;
+                gap: 0;
+                margin-bottom: 20px;
+                border-bottom: 3px solid var(--black);
+            }
+
+            .variant-tab {
+                background: var(--white);
+                border: 3px solid var(--black);
+                border-bottom: none;
+                padding: 8px 18px;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: inherit;
+                margin-right: 6px;
+            }
+
+            .variant-tab.active {
+                background: var(--blue);
+                color: white;
+            }
+
+            .variant-panel { display: none; }
+            .variant-panel.active { display: block; }
+        </style>
+    </head>
+    <body>
+        <div class="preview-frame">
+            <h1 style="font-weight:900; text-transform:uppercase; margin-bottom:6px;">Preview Option #3</h1>
+            <p style="font-weight:700; color:#555; margin-bottom:18px;">Header lebih informatif (MQTT, auth, last update)</p>
+
+            <div class="variant-tabs">
+                <button class="variant-tab active" data-variant="ok">Semua Sehat</button>
+                <button class="variant-tab" data-variant="degraded">Sebagian Degraded</button>
+                <button class="variant-tab" data-variant="down">MQTT Down</button>
+            </div>
+
+            <!-- VARIANT: Semua sehat -->
+            <div id="variant-ok" class="variant-panel active">
+                <header class="header--enhanced">
+                    <div class="header__top">
+                        <div class="logo">
+                            <span>⛰️</span> ALTIVEX
+                        </div>
+                        <div class="header-status-group">
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                Basecamp Online
+                            </span>
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                Cloud Synced
+                            </span>
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                MQTT Connected
+                            </span>
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                Auth OK
+                            </span>
+                        </div>
+                    </div>
+                    <div class="header__bottom">
+                        <span class="header__last-update">📡 Update terakhir: <b id="lu-ok">3 detik lalu</b></span>
+                        <span style="color:#666;">7 alat aktif · 5 pendaki sedang mendaki · 1 keluar koridor</span>
+                    </div>
+                </header>
+                <div class="preview-mock-map" style="margin-top:18px;">[ Peta Live di sini ]</div>
+            </div>
+
+            <!-- VARIANT: Degraded -->
+            <div id="variant-degraded" class="variant-panel">
+                <header class="header--enhanced">
+                    <div class="header__top">
+                        <div class="logo">
+                            <span>⛰️</span> ALTIVEX
+                        </div>
+                        <div class="header-status-group">
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                Basecamp Online
+                            </span>
+                            <span class="status-chip status-chip--warn">
+                                <span class="status-chip__dot status-chip__dot--warn"></span>
+                                Cloud Local Mode
+                            </span>
+                            <span class="status-chip status-chip--warn">
+                                <span class="status-chip__dot status-chip__dot--warn"></span>
+                                MQTT Reconnect (4s)
+                            </span>
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                Auth OK
+                            </span>
+                        </div>
+                    </div>
+                    <div class="header__bottom">
+                        <span class="header__last-update">📡 Update terakhir: <b>1 menit 12 detik lalu</b></span>
+                        <span style="color:#B00020; font-weight:800;">⚠ Polling jatuh ke /api/sensor/latest — WS sedang offline</span>
+                    </div>
+                </header>
+                <div class="preview-mock-map" style="margin-top:18px;">[ Peta Live di sini ]</div>
+            </div>
+
+            <!-- VARIANT: MQTT Down -->
+            <div id="variant-down" class="variant-panel">
+                <header class="header--enhanced">
+                    <div class="header__top">
+                        <div class="logo">
+                            <span>⛰️</span> ALTIVEX
+                        </div>
+                        <div class="header-status-group">
+                            <span class="status-chip status-chip--ok">
+                                <span class="status-chip__dot status-chip__dot--ok"></span>
+                                Basecamp Online
+                            </span>
+                            <span class="status-chip status-chip--down">
+                                <span class="status-chip__dot status-chip__dot--down"></span>
+                                Cloud Local Mode
+                            </span>
+                            <span class="status-chip status-chip--down">
+                                <span class="status-chip__dot status-chip__dot--down"></span>
+                                MQTT Down (retry 30s)
+                            </span>
+                            <span class="status-chip status-chip--down">
+                                <span class="status-chip__dot status-chip__dot--down"></span>
+                                Auth 401
+                            </span>
+                        </div>
+                    </div>
+                    <div class="header__bottom">
+                        <span class="header__last-update">📡 Update terakhir: <b>14 menit lalu</b></span>
+                        <span style="color:#B00020; font-weight:800;">🚨 Sistem dalam mode failsafe — hanya Serial bridge yang aktif</span>
+                    </div>
+                </header>
+                <div class="preview-mock-map" style="margin-top:18px;">[ Peta Live di sini ]</div>
+            </div>
+
+            <div class="preview-note">
+                <b>Yang berubah dibanding versi sekarang:</b>
+                <ul style="margin-top:8px; margin-left:24px; font-weight:600; line-height:1.7;">
+                    <li>4 indikator status (sebelumnya 2): Basecamp, Cloud, MQTT, Auth.</li>
+                    <li>Sub-bar di bawah header berisi "update terakhir" + ringkasan jumlah alat / pendaki.</li>
+                    <li>Warna chip beda: hijau (ok), kuning (degraded), merah (down). Konsisten dengan palette neobrutalism.</li>
+                    <li>Saat MQTT reconnect, label menampilkan countdown backoff supaya operator tahu sistem sedang retry.</li>
+                </ul>
+            </div>
+        </div>
+
+        <script>
+            // Variant switcher (preview-only).
+            document.querySelectorAll('.variant-tab').forEach(t => {
+                t.addEventListener('click', () => {
+                    document.querySelectorAll('.variant-tab').forEach(x => x.classList.remove('active'));
+                    document.querySelectorAll('.variant-panel').forEach(x => x.classList.remove('active'));
+                    t.classList.add('active');
+                    document.getElementById('variant-' + t.dataset.variant).classList.add('active');
+                });
+            });
+
+            // Mock "update terakhir" counter (variant ok only).
+            const luEl = document.getElementById('lu-ok');
+            let secs = 0;
+            setInterval(() => {
+                secs += 1;
+                if (secs < 60) luEl.textContent = `${secs} detik lalu`;
+                else if (secs < 3600) luEl.textContent = `${Math.floor(secs/60)} menit ${secs % 60} detik lalu`;
+                else luEl.textContent = `${Math.floor(secs/3600)} jam lalu`;
+            }, 1000);
+        </script>
+    </body>
+</html>

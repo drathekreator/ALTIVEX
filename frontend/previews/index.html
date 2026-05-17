@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ALTIVEX | UI Previews</title>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../dashboard.css" />
+
+        <style>
+            body { padding: 40px 24px; }
+
+            .preview-list {
+                max-width: 720px;
+                margin: 0 auto;
+            }
+
+            .preview-list h1 {
+                font-weight: 900;
+                text-transform: uppercase;
+                margin-bottom: 8px;
+                letter-spacing: -0.5px;
+            }
+
+            .preview-list p.lede {
+                color: #555;
+                font-weight: 700;
+                margin-bottom: 28px;
+                line-height: 1.5;
+            }
+
+            .preview-card {
+                background: var(--white);
+                border: 4px solid var(--black);
+                box-shadow: var(--shadow);
+                padding: 18px 22px;
+                margin-bottom: 18px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .preview-card__num {
+                font-weight: 900;
+                font-size: 2rem;
+                width: 60px;
+                text-align: center;
+                background: var(--yellow);
+                border: 3px solid var(--black);
+                padding: 8px 0;
+            }
+
+            .preview-card__body { flex: 1; }
+            .preview-card__title { font-weight: 900; text-transform: uppercase; font-size: 1.05rem; }
+            .preview-card__desc  { font-weight: 700; color: #555; font-size: 0.85rem; margin-top: 4px; line-height: 1.4; }
+            .preview-card__btn   { white-space: nowrap; }
+        </style>
+    </head>
+    <body>
+        <div class="preview-list">
+            <h1>ALTIVEX UI Previews</h1>
+            <p class="lede">
+                Mock standalone (tanpa backend). Pakai data palsu untuk
+                memvisualkan rekomendasi UI #2, #3, dan #7. Klik tombol di
+                kanan setiap kartu untuk membuka preview-nya.
+            </p>
+
+            <div class="preview-card">
+                <div class="preview-card__num">🎨</div>
+                <div class="preview-card__body">
+                    <div class="preview-card__title">Palette Refresh + Dark Mode</div>
+                    <div class="preview-card__desc">
+                        Tiga palette pilihan (Modern Warm / Pastel Neo / Vibrant) plus dark mode. Switcher live di atas — bisa banding-bandingkan tanpa refresh.
+                    </div>
+                </div>
+                <a class="neo-btn preview-card__btn" href="option-palette.html">BUKA</a>
+            </div>
+
+            <div class="preview-card">
+                <div class="preview-card__num">#2</div>
+                <div class="preview-card__body">
+                    <div class="preview-card__title">Layout 3 Kolom + Sidebar Tab</div>
+                    <div class="preview-card__desc">
+                        Peta jadi dominan (rasio 2/3), 4 kartu summary di pojok kanan atas (Aktif / Mendaki / Keluar / Standby), sidebar pakai tab Alert / Standby dengan counter merah.
+                    </div>
+                </div>
+                <a class="neo-btn preview-card__btn" href="option-2-layout.html">BUKA</a>
+            </div>
+
+            <div class="preview-card">
+                <div class="preview-card__num">#3</div>
+                <div class="preview-card__body">
+                    <div class="preview-card__title">Header Lebih Informatif</div>
+                    <div class="preview-card__desc">
+                        4 indikator status (Basecamp / Cloud / MQTT / Auth) plus sub-bar "update terakhir" + ringkasan jumlah alat / pendaki. 3 variant: semua sehat, degraded, MQTT down.
+                    </div>
+                </div>
+                <a class="neo-btn preview-card__btn" href="option-3-header.html">BUKA</a>
+            </div>
+
+            <div class="preview-card">
+                <div class="preview-card__num">#7</div>
+                <div class="preview-card__body">
+                    <div class="preview-card__title">Dark Mode</div>
+                    <div class="preview-card__desc">
+                        Toggle 🌗 untuk operator dinas malam. CSS variable di-override saat <code>body.dark-mode</code> aktif. Border + shadow tetap, kontrasnya dibalik.
+                    </div>
+                </div>
+                <a class="neo-btn preview-card__btn" href="option-7-darkmode.html">BUKA</a>
+            </div>
+
+            <div class="neo-card" style="margin-top:30px;">
+                <p style="font-weight:700; line-height:1.6;">
+                    <b>Cara membuka:</b> jalankan backend (<code>cargo run</code> atau <code>docker compose up</code>) dan akses <code>http://localhost:8080/previews/</code>. Atau langsung double-click file <code>.html</code> di folder ini di Windows Explorer — tile peta Leaflet tidak load (karena CSP di <code>file://</code>) tapi struktur layout tetap terlihat.
+                </p>
+            </div>
+
+            <div class="neo-card" style="background: #fffbe0;">
+                <p style="font-weight:700; line-height:1.6;">
+                    <b>Catatan:</b> file di folder <code>previews/</code> ini hanya untuk evaluasi UI. Tidak meng-import <code>dashboard.js</code> dan tidak memanggil API real — datanya semua hard-coded. Setelah Anda pilih opsi mana yang dieksekusi, saya akan pindahkan kelas + markup yang relevan ke <code>dashboard.css</code> dan <code>index.html</code> production.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

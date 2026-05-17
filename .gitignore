@@ -1,20 +1,32 @@
-# --- Rust ---
+# =====================================================================
+# Rust
+# =====================================================================
 /target
-# Keep Cargo.lock for binary applications to ensure reproducible builds
-# Cargo.lock
 
-# --- Secrets & Config ---
+# Cargo.lock IS committed (binary application — reproducible builds).
+
+# =====================================================================
+# Secrets & local config
+# =====================================================================
 .env
-*.env
+.env.*
 !.env.example
 
-# --- Docker & Persistent Data ---
-# Ignore database data and broker state
+# Mosquitto password file — WAJIB di-generate per environment via
+# `mosquitto_passwd` (lihat AGENT.md → "MQTT auth setup"). Hash-nya
+# spesifik untuk password operator, jadi tidak boleh ke-commit.
+mosquitto/config/passwd
+
+# =====================================================================
+# Docker & persistent data
+# =====================================================================
 mosquitto/data/
 mosquitto/log/*.log
 !mosquitto/log/.gitkeep
 
-# --- IDEs & Editor trash ---
+# =====================================================================
+# IDE / Editor
+# =====================================================================
 .vscode/
 .idea/
 *.swp
@@ -22,12 +34,16 @@ mosquitto/log/*.log
 *.tmp
 *.bak
 
-# --- Operating System ---
+# =====================================================================
+# OS
+# =====================================================================
 .DS_Store
 Thumbs.db
 Desktop.ini
 
-# --- Frontend (if any npm used) ---
+# =====================================================================
+# Frontend dev artifacts
+# =====================================================================
 node_modules/
 dist/
 build/
@@ -38,5 +54,13 @@ build/
 .fusebox/
 .dynamodb/
 
-# --- SQLx Offline Mode ---
+# =====================================================================
+# SQLx offline mode
+# =====================================================================
 .sqlx/
+
+# =====================================================================
+# Test artifacts (proptest regressions tetap di-track sebagai dokumentasi
+# counter-example histories — biar reviewer bisa lihat seed yang pernah
+# bikin fail)
+# =====================================================================

@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ALTIVEX | Preview Palette + Dark Mode</title>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap"
+            rel="stylesheet"
+        />
+
+        <style>
+            /* ================================================================
+               PALETTE PREVIEW — standalone (tidak link ke dashboard.css)
+               ----------------------------------------------------------------
+               Setiap palette adalah satu set CSS variable di-class body.
+               Dark mode adalah class tambahan yang men-tune variabel-nya.
+               Kalau Anda pilih satu, saya pindahkan variabel-nya ke
+               `:root { ... }` di `dashboard.css` produksi (branch
+               `body.dark-mode` masuk ke section bawah).
+
+               Yang TIDAK saya ubah di palette ini: bentuk neobrutalism
+               (border tebal, shadow blok, font Outfit). Hanya warna.
+               ================================================================ */
+
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+
+            html, body {
+                font-family: "Outfit", sans-serif;
+                background: var(--bg);
+                color: var(--ink);
+                min-height: 100vh;
+                transition: background 0.3s, color 0.3s;
+            }
+
+            /* ============ PALETTE A — Modern Warm ============
+               Cream background, mustard kuning, forest hijau, terracotta
+               merah, cobalt biru. Lebih hangat, masih punya punch
+               neobrutalism. */
+            body.palette-warm {
+                --bg:      #FFF6E4;
+                --surface: #FFFFFF;
+                --ink:     #1A1A1A;
+                --muted:   #6B5E47;
+                --line:    #1A1A1A;
+
+                --primary: #F5B700;     /* mustard, lebih hangat dari #FFD600 */
+                --success: #2EC27E;     /* forest hijau */
+                --danger:  #F2545B;     /* terracotta merah */
+                --info:    #3D5AFE;     /* cobalt biru */
+                --accent:  #B5179E;     /* magenta untuk highlight */
+
+                --shadow:    5px 5px 0 0 var(--line);
+                --shadow-sm: 3px 3px 0 0 var(--line);
+            }
+            body.palette-warm.dark-mode {
+                --bg:      #1B1810;
+                --surface: #2A2515;
+                --ink:     #FFF6E4;
+                --muted:   #C9BFA6;
+                --line:    #FFF6E4;
+                --primary: #FFCB30;
+                --success: #4FE39A;
+                --danger:  #FF7A85;
+                --info:    #6E8DFF;
+                --accent:  #E94CCB;
+                --shadow:    5px 5px 0 0 var(--primary);
+                --shadow-sm: 3px 3px 0 0 var(--primary);
+            }
+
+            /* ============ PALETTE B — Pastel Neo ============
+               Soft pastels — lebih ramah mata untuk operator yang stare
+               dashboard berjam-jam. Masih neobrutalism karena border
+               tebal + shadow blok pertahankan punch-nya. */
+            body.palette-pastel {
+                --bg:      #FFF3F1;
+                --surface: #FFFFFF;
+                --ink:     #1A1A1A;
+                --muted:   #6F5C5C;
+                --line:    #1A1A1A;
+
+                --primary: #FFD972;     /* butter kuning */
+                --success: #B5EAD7;     /* mint */
+                --danger:  #FFA8A8;     /* coral */
+                --info:    #B5DEFF;     /* sky */
+                --accent:  #C7B0F5;     /* lavender */
+
+                --shadow:    5px 5px 0 0 var(--line);
+                --shadow-sm: 3px 3px 0 0 var(--line);
+            }
+            body.palette-pastel.dark-mode {
+                --bg:      #1A1820;
+                --surface: #25222D;
+                --ink:     #FFF3F1;
+                --muted:   #C7BFC9;
+                --line:    #FFF3F1;
+                --primary: #FFE49A;
+                --success: #80E0BE;
+                --danger:  #FFB8B8;
+                --info:    #9CC8F0;
+                --accent:  #B299E8;
+                --shadow:    5px 5px 0 0 var(--primary);
+                --shadow-sm: 3px 3px 0 0 var(--primary);
+            }
+
+            /* ============ PALETTE C — Vibrant Tropical ============
+               Saturated, mirip Linear / Stripe / modern SaaS. Ini yang
+               paling "alive". Kontras tinggi. */
+            body.palette-vibrant {
+                --bg:      #FAFAF5;
+                --surface: #FFFFFF;
+                --ink:     #0A0A0A;
+                --muted:   #555555;
+                --line:    #0A0A0A;
+
+                --primary: #FFB800;     /* sun */
+                --success: #84CC16;     /* lime */
+                --danger:  #DC2626;     /* punch */
+                --info:    #0EA5E9;     /* ocean */
+                --accent:  #8B5CF6;     /* plum */
+
+                --shadow:    5px 5px 0 0 var(--line);
+                --shadow-sm: 3px 3px 0 0 var(--line);
+            }
+            body.palette-vibrant.dark-mode {
+                --bg:      #0E0F11;
+                --surface: #1A1C20;
+                --ink:     #F2F2EE;
+                --muted:   #B0B0AC;
+                --line:    #F2F2EE;
+                --primary: #FFC940;
+                --success: #A3E635;
+                --danger:  #F87171;
+                --info:    #38BDF8;
+                --accent:  #A78BFA;
+                /* Vibrant + dark = shadow ber-glow accent, lebih
+                   "Berghain neobrutalism". */
+                --shadow:    5px 5px 0 0 var(--accent);
+                --shadow-sm: 3px 3px 0 0 var(--accent);
+            }
+
+            /* ================ KOMPONEN (palette-aware) ================ */
+
+            .neo-card {
+                background: var(--surface);
+                border: 4px solid var(--line);
+                box-shadow: var(--shadow);
+                padding: 18px;
+                margin-bottom: 16px;
+            }
+
+            .neo-btn {
+                background: var(--primary);
+                color: var(--ink);
+                border: 3px solid var(--line);
+                box-shadow: var(--shadow-sm);
+                padding: 10px 18px;
+                font-weight: 800;
+                text-transform: uppercase;
+                cursor: pointer;
+                font-family: inherit;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .neo-btn:active {
+                box-shadow: none;
+                transform: translate(3px, 3px);
+            }
+            .neo-btn-sm {
+                padding: 6px 12px;
+                font-size: 0.78rem;
+                border-width: 2px;
+            }
+            .neo-btn-success { background: var(--success); }
+            .neo-btn-danger  { background: var(--danger); color: white; }
+            .neo-btn-info    { background: var(--info); color: white; }
+
+            .neo-badge {
+                background: var(--primary);
+                color: var(--ink);
+                border: 2px solid var(--line);
+                padding: 4px 10px;
+                font-weight: 700;
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                display: inline-block;
+            }
+            .neo-badge--success { background: var(--success); }
+            .neo-badge--danger  { background: var(--danger); color: white; }
+            .neo-badge--surface { background: var(--surface); }
+
+            .dot {
+                width: 10px;
+                height: 10px;
+                border: 2px solid var(--line);
+                border-radius: 50%;
+                display: inline-block;
+            }
+            .dot--ok      { background: var(--success); }
+            .dot--down    { background: var(--danger); }
+
+            /* ================ HEADER ================ */
+            .preview-header {
+                background: var(--surface);
+                border-bottom: 4px solid var(--line);
+                padding: 14px 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 14px;
+                flex-wrap: wrap;
+                position: sticky;
+                top: 0;
+                z-index: 50;
+            }
+
+            .logo {
+                font-weight: 900;
+                font-size: 1.6rem;
+                text-transform: uppercase;
+                letter-spacing: -0.5px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--ink);
+            }
+
+            .header-status-group {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            /* ================ ALERT CARD ================ */
+            .alert-card {
+                border-left: 10px solid var(--danger);
+                animation: pulse 2.4s infinite;
+            }
+            @keyframes pulse {
+                0%   { box-shadow: var(--shadow); }
+                50%  { box-shadow: 8px 8px 0 0 var(--danger); }
+                100% { box-shadow: var(--shadow); }
+            }
+
+            /* ================ MAP MOCK ================ */
+            .map-mock {
+                height: 220px;
+                border: 4px solid var(--line);
+                box-shadow: var(--shadow);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                color: var(--muted);
+                background: linear-gradient(135deg, var(--success) 0%, var(--info) 100%);
+                opacity: 0.92;
+            }
+            body.dark-mode .map-mock {
+                opacity: 0.65;
+                color: var(--ink);
+            }
+
+            /* ================ MAP ALERT BANNER ================ */
+            .map-alert-banner {
+                background: var(--danger);
+                color: white;
+                border: 4px solid var(--line);
+                box-shadow: var(--shadow);
+                padding: 12px 18px;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                font-weight: 800;
+                cursor: pointer;
+                animation: pulse 2.4s infinite;
+            }
+            .map-alert-banner__cta {
+                background: var(--surface);
+                color: var(--ink);
+                border: 3px solid var(--line);
+                padding: 6px 14px;
+                font-weight: 800;
+                text-transform: uppercase;
+                cursor: pointer;
+                font-family: inherit;
+            }
+
+            /* ================ TOAST PREVIEW ================ */
+            .toast-stack {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                z-index: 200;
+            }
+            .toast {
+                background: var(--surface);
+                color: var(--ink);
+                border: 3px solid var(--line);
+                box-shadow: var(--shadow-sm);
+                padding: 12px 20px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border-left: 8px solid var(--primary);
+                animation: slidein 0.4s ease;
+            }
+            .toast--success { border-left-color: var(--success); }
+            .toast--error   { border-left-color: var(--danger); }
+            @keyframes slidein {
+                from { transform: translateX(120%); }
+                to   { transform: translateX(0); }
+            }
+
+            /* ================ PREVIEW SHELL ================ */
+            .switcher {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: var(--ink);
+                color: var(--bg);
+                padding: 12px 30px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                border-bottom: 4px solid var(--line);
+            }
+            .switcher__label {
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                font-size: 0.9rem;
+            }
+            .switcher__btn {
+                background: var(--surface);
+                color: var(--ink);
+                border: 3px solid var(--bg);
+                padding: 6px 14px;
+                font-weight: 800;
+                font-family: inherit;
+                cursor: pointer;
+                text-transform: uppercase;
+                font-size: 0.78rem;
+            }
+            .switcher__btn.active {
+                background: var(--primary);
+                color: var(--ink);
+                border-color: var(--primary);
+            }
+            .switcher__divider {
+                width: 2px;
+                height: 28px;
+                background: var(--bg);
+                opacity: 0.4;
+                margin: 0 4px;
+            }
+
+            .frame {
+                padding: 24px 30px 80px;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .grid-2 {
+                display: grid;
+                grid-template-columns: minmax(0, 2fr) 320px;
+                gap: 20px;
+            }
+            @media (max-width: 900px) {
+                .grid-2 { grid-template-columns: 1fr; }
+            }
+
+            .palette-swatches {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .swatch {
+                height: 56px;
+                border: 3px solid var(--line);
+                display: flex;
+                align-items: flex-end;
+                padding: 6px;
+                font-size: 0.65rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                color: rgba(0,0,0,0.7);
+            }
+            body.dark-mode .swatch { color: rgba(0,0,0,0.85); }
+
+            .swatch--primary { background: var(--primary); }
+            .swatch--success { background: var(--success); }
+            .swatch--danger  { background: var(--danger); color: white; }
+            .swatch--info    { background: var(--info); color: white; }
+            .swatch--accent  { background: var(--accent); color: white; }
+
+            .palette-info {
+                margin-top: 18px;
+                padding: 14px 18px;
+                background: var(--surface);
+                border: 3px dashed var(--line);
+                font-weight: 700;
+                font-size: 0.85rem;
+                line-height: 1.55;
+                color: var(--muted);
+            }
+            .palette-info strong { color: var(--ink); }
+
+            .alert-card__name { font-weight: 900; font-size: 1.05rem; color: var(--ink); }
+            .alert-card__meta { font-size: 0.78rem; font-weight: 700; margin: 6px 0 10px; color: var(--muted); }
+            .alert-card__actions { display: flex; gap: 8px; }
+
+            .standby-card { background: var(--surface); }
+            .standby-card__name { font-weight: 800; color: var(--ink); }
+            .standby-card__meta { font-size: 0.7rem; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+
+            .toolbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            }
+            .toolbar__title { font-weight: 900; text-transform: uppercase; color: var(--ink); }
+        </style>
+    </head>
+    <body class="palette-warm">
+        <div class="switcher">
+            <span class="switcher__label">PALETTE:</span>
+            <button class="switcher__btn active" data-palette="palette-warm">Modern Warm</button>
+            <button class="switcher__btn" data-palette="palette-pastel">Pastel Neo</button>
+            <button class="switcher__btn" data-palette="palette-vibrant">Vibrant</button>
+            <span class="switcher__divider"></span>
+            <span class="switcher__label">THEME:</span>
+            <button class="switcher__btn active" data-theme="light">☀ Light</button>
+            <button class="switcher__btn" data-theme="dark">🌙 Dark</button>
+        </div>
+
+        <header class="preview-header">
+            <div class="logo">
+                <span>⛰️</span> ALTIVEX
+            </div>
+            <div class="header-status-group">
+                <span class="neo-badge neo-badge--surface">
+                    <span class="dot dot--ok"></span> Basecamp Online
+                </span>
+                <span class="neo-badge neo-badge--surface">
+                    <span class="dot dot--ok"></span> Cloud Synced
+                </span>
+                <span class="neo-badge neo-badge--surface">
+                    <span class="dot dot--ok"></span> MQTT
+                </span>
+                <span class="neo-badge neo-badge--surface">
+                    <span class="dot dot--ok"></span> Auth
+                </span>
+            </div>
+        </header>
+
+        <div class="frame">
+            <div class="map-alert-banner">
+                <span style="font-size:1.3rem;">⚠️</span>
+                <span style="flex:1; text-transform:uppercase;">2 pendaki di luar koridor</span>
+                <button class="map-alert-banner__cta">Lihat</button>
+            </div>
+
+            <div class="grid-2">
+                <section>
+                    <div class="map-mock">[ Peta Live di sini — tile peta asli pakai OpenStreetMap ]</div>
+
+                    <div class="neo-card" style="margin-top:18px;">
+                        <div class="toolbar">
+                            <h2 class="toolbar__title">Daftar Riwayat Pendakian</h2>
+                            <div style="display:flex; gap:10px;">
+                                <button class="neo-btn neo-btn-success">📥 Export CSV</button>
+                                <button class="neo-btn">➕ Daftarkan</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="neo-card">
+                        <h3 style="font-weight:900; text-transform:uppercase; margin-bottom:10px; color:var(--ink);">Palette Swatch</h3>
+                        <div class="palette-swatches">
+                            <div class="swatch swatch--primary">Primary</div>
+                            <div class="swatch swatch--success">Success</div>
+                            <div class="swatch swatch--danger">Danger</div>
+                            <div class="swatch swatch--info">Info</div>
+                            <div class="swatch swatch--accent">Accent</div>
+                        </div>
+                        <p class="palette-info" id="palette-desc">
+                            <!-- Diisi via JS -->
+                        </p>
+                    </div>
+                </section>
+
+                <aside>
+                    <div class="neo-card alert-card">
+                        <div class="alert-card__name">⚠️ AHMAD SUBARJO</div>
+                        <div class="alert-card__meta">ID: ALAT-001 | Telp: 081200000000</div>
+                        <span class="neo-badge neo-badge--danger">KELUAR KORIDOR</span>
+                        <div class="alert-card__actions" style="margin-top:10px;">
+                            <button class="neo-btn neo-btn-sm neo-btn-danger">🔔 ALERT</button>
+                            <button class="neo-btn neo-btn-sm">🗺️ PATH</button>
+                        </div>
+                    </div>
+
+                    <div class="neo-card alert-card">
+                        <div class="alert-card__name">⚠️ DEWI LESTARI</div>
+                        <div class="alert-card__meta">ID: ALAT-002 | Telp: 081300000000</div>
+                        <span class="neo-badge neo-badge--danger">KELUAR KORIDOR</span>
+                        <div class="alert-card__actions" style="margin-top:10px;">
+                            <button class="neo-btn neo-btn-sm neo-btn-danger">🔔 ALERT</button>
+                            <button class="neo-btn neo-btn-sm">🗺️ PATH</button>
+                        </div>
+                    </div>
+
+                    <div class="neo-card standby-card">
+                        <div class="standby-card__name">🛰️ ALAT-005</div>
+                        <div class="standby-card__meta">Status: Standby (Online)</div>
+                        <button class="neo-btn neo-btn-sm neo-btn-info">📝 DAFTAR</button>
+                    </div>
+
+                    <div class="neo-card standby-card">
+                        <div class="standby-card__name">🛰️ ALAT-006</div>
+                        <div class="standby-card__meta">Status: Standby (Online)</div>
+                        <button class="neo-btn neo-btn-sm neo-btn-info">📝 DAFTAR</button>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <div class="toast-stack">
+            <div class="toast toast--success">
+                <span>🔔</span> Pendaki Berhasil Didaftarkan
+            </div>
+            <div class="toast toast--error">
+                <span>🔔</span> Token tidak valid, silakan masukkan ulang
+            </div>
+        </div>
+
+        <script>
+            const palettes = {
+                'palette-warm': {
+                    name: 'Modern Warm',
+                    desc: '<strong>Cream + mustard + forest + cobalt.</strong> Hangat, ramah dipandang lama. Cocok untuk operator dinas siang. Punch neobrutalism tetap kuat karena border + shadow tidak diubah, hanya warnanya yang lebih earthy.',
+                },
+                'palette-pastel': {
+                    name: 'Pastel Neo',
+                    desc: '<strong>Cream pinkish + butter + mint + coral + sky.</strong> Paling lembut, mengurangi mata lelah saat layar dipantau berjam-jam. Risiko: warna danger (coral) lebih halus, jadi alert visual sedikit lebih lemah dibanding palette merah pekat.',
+                },
+                'palette-vibrant': {
+                    name: 'Vibrant',
+                    desc: '<strong>Off-white + sun + lime + punch + ocean + plum.</strong> Paling "alive", saturasi tinggi. Mirip Linear / Stripe. Dark mode-nya khas neobrutalism modern: shadow bergeser ke warna accent (plum) → efek glow tanpa kehilangan bentuk blok.',
+                },
+            };
+
+            const body = document.body;
+            const desc = document.getElementById('palette-desc');
+
+            function refreshDesc() {
+                const cls = Array.from(body.classList).find(c => c.startsWith('palette-'));
+                if (cls && palettes[cls]) {
+                    const isDark = body.classList.contains('dark-mode');
+                    desc.innerHTML = palettes[cls].desc + (isDark
+                        ? ' <em>Dark mode aktif: shadow di-tinted ke warna primary/accent untuk mempertahankan punch.</em>'
+                        : '');
+                }
+            }
+
+            document.querySelectorAll('[data-palette]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.palette;
+                    Object.keys(palettes).forEach(p => body.classList.remove(p));
+                    body.classList.add(target);
+                    document.querySelectorAll('[data-palette]').forEach(b => b.classList.toggle('active', b === btn));
+                    refreshDesc();
+                });
+            });
+
+            document.querySelectorAll('[data-theme]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const isDark = btn.dataset.theme === 'dark';
+                    body.classList.toggle('dark-mode', isDark);
+                    document.querySelectorAll('[data-theme]').forEach(b => b.classList.toggle('active', b === btn));
+                    refreshDesc();
+                });
+            });
+
+            refreshDesc();
+        </script>
+    </body>
+</html>

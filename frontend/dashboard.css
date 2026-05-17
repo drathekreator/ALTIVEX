@@ -1,0 +1,772 @@
+/* =====================================================================
+   ALTIVEX Dashboard — stylesheet
+   =====================================================================
+   Dipisahkan dari `index.html` (Task UI #10) supaya markup tidak
+   bercampur dengan styling, dan pemeriksaan visual review jadi lebih
+   mudah. Utility class baru di bagian bawah file menggantikan inline
+   `style="..."` lama (Task UI #1) sehingga theme switch / A/B layout
+   dapat dilakukan tanpa menyentuh JS atau HTML.
+
+   Konvensi:
+   - `.neo-*`         : komponen utama bergaya neobrutalism.
+   - `.alert-card`    : kartu pendaki keluar buffer (warna merah +
+                        animasi pulse). Diset oleh `_renderHikerCards`
+                        di `dashboard.js`.
+   - `.standby-card`  : kartu alat belum terdaftar.
+   - `.badge-*`       : varian warna untuk `.neo-badge`.
+   - `.toast--*`      : warna border-left untuk `showToast`.
+   - `.map-alert-banner` : banner peringatan in-app (Task UI #6).
+   ===================================================================== */
+
+:root {
+    /* =================================================================
+       Modern Warm palette — palette refresh v2.
+       -----------------------------------------------------------------
+       Token semantik baru (--bg, --surface, --ink, --line, --primary,
+       --success, --danger, --info, --accent, --muted) jadi single
+       source of truth. Token lama (--black, --white, --yellow, --green,
+       --red, --blue, --gray) tetap ada sebagai alias supaya caller
+       existing (CSS rule lama + inline `style="..."` di JS) tidak
+       perlu di-refactor sekaligus.
+       ================================================================= */
+    --bg:      #FFF6E4;     /* cream background */
+    --surface: #FFFFFF;     /* card / modal surface */
+    --ink:     #1A1A1A;     /* default text color */
+    --muted:   #6B5E47;     /* helper text & meta */
+    --line:    #1A1A1A;     /* border lines */
+
+    --primary: #F5B700;     /* mustard, ganti neon kuning sebelumnya */
+    --success: #2EC27E;     /* forest hijau */
+    --danger:  #F2545B;     /* terracotta merah */
+    --info:    #3D5AFE;     /* cobalt biru */
+    --accent:  #B5179E;     /* magenta untuk highlight (reserved) */
+
+    /* Backward-compat aliases. */
+    --black:  var(--line);
+    --white:  var(--surface);
+    --yellow: var(--primary);
+    --green:  var(--success);
+    --red:    var(--danger);
+    --blue:   var(--info);
+    --gray:   #E0E0E0;
+
+    --shadow:    5px 5px 0px 0px var(--line);
+    --shadow-sm: 3px 3px 0px 0px var(--line);
+}
+
+/* =====================================================================
+   Dark mode — diaktifkan via class `body.dark-mode`.
+   ---------------------------------------------------------------------
+   Operator dinas malam: toggle 🌙 di header. Default first-visit
+   mengikuti `prefers-color-scheme: dark`; setelah klik manual, pilihan
+   tersimpan di `localStorage["ALTIVEX_THEME"]` (dashboard.js).
+   Aturan kontras yang dijaga:
+     - `--ink` di-flip ke cream supaya teks default tetap legible.
+     - `--line` ikut cream supaya border tebal khas neobrutalism tetap
+       terlihat di atas background gelap.
+     - Shadow di-tinted ke `--primary` (mustard amber) — kartu jadi
+       glow halus, bentuk blok tetap utuh.
+     - Komponen yang punya bright fill bawaan (button + badge) tetap
+       memakai teks dekat-hitam supaya kontras tidak luntur (lihat
+       `.neo-btn`, `.neo-badge` di bawah).
+   ===================================================================== */
+body.dark-mode {
+    --bg:      #1B1810;
+    --surface: #2A2515;
+    --ink:     #FFF6E4;
+    --muted:   #C9BFA6;
+    --line:    #FFF6E4;
+    --primary: #FFCB30;
+    --success: #4FE39A;
+    --danger:  #FF7A85;
+    --info:    #6E8DFF;
+    --accent:  #E94CCB;
+    --gray:    #3A332A;
+
+    /* Backward-compat aliases — di-redefine eksplisit supaya CSS yang
+       masih pakai `var(--white)` / `var(--black)` mendapat nilai dark
+       (CSS variable resolve di lazy-time, tapi beberapa bug
+       inheritance lebih aman kalau di-set ulang di scope yang sama). */
+    --black:  var(--line);
+    --white:  var(--surface);
+    --yellow: var(--primary);
+    --green:  var(--success);
+    --red:    var(--danger);
+    --blue:   var(--info);
+
+    --shadow:    5px 5px 0px 0px var(--primary);
+    --shadow-sm: 3px 3px 0px 0px var(--primary);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Outfit", sans-serif;
+    background-color: var(--bg);
+    color: var(--ink);
+    overflow-x: hidden;
+}
+
+/* ---------- DARK MODE — explicit color overrides ----------
+   Beberapa elemen di neobrutalism punya background terang bawaan
+   (kartu putih, tab-link putih, modal cream, table container, toast,
+   notification panel). Saat dark-mode aktif, `--surface` / `--white`
+   menjadi gelap, jadi color teks-nya WAJIB ikut flip ke `--ink` cream
+   supaya tidak hilang dilatar gelap. Set semuanya eksplisit di sini
+   agar tidak bergantung pada inheritance yang fragile. */
+body.dark-mode .neo-card,
+body.dark-mode .neo-table-container,
+body.dark-mode .neo-table th,
+body.dark-mode .neo-table td,
+body.dark-mode .tab-link,
+body.dark-mode .toolbar__title,
+body.dark-mode .toast,
+body.dark-mode .notification-request,
+body.dark-mode .modal-content,
+body.dark-mode .modal-detail-stats,
+body.dark-mode .stats-heading,
+body.dark-mode .stats-list,
+body.dark-mode .stats-info,
+body.dark-mode .stats-item,
+body.dark-mode .alert-card__name,
+body.dark-mode .standby-card__name,
+body.dark-mode .section-title,
+body.dark-mode .section-title--mt,
+body.dark-mode .form-label,
+body.dark-mode .modal-title,
+body.dark-mode .confirm-msg,
+body.dark-mode .empty-message,
+body.dark-mode .notif-prompt-text,
+body.dark-mode .map-alert-banner__cta {
+    color: var(--ink);
+}
+
+/* Tabel di dark-mode: header pakai surface darker + teks cream agar
+   beda kontras vs cell biasa. */
+body.dark-mode .neo-table th {
+    background: var(--gray);
+}
+
+/* Badge `.badge-white` di dark-mode harus tetap kontras vs surface
+   gelap — paksa background ke --bg (lebih gelap dari surface) dan
+   teksnya cream. Begitu juga badge-status-off di tabel. */
+body.dark-mode .badge-white {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--line);
+}
+body.dark-mode .badge-status-off {
+    background: var(--gray);
+    color: var(--ink);
+}
+
+/* ---------- NEOBRUTALISM PRIMITIVES ---------- */
+.neo-card {
+    background: var(--white);
+    border: 4px solid var(--black);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.neo-btn {
+    background: var(--yellow);
+    /* Tombol berwarna terang harus tetap pakai teks dekat-hitam baik
+       di light maupun dark mode supaya kontras > 7:1 (WCAG AAA). */
+    color: #1A1A1A;
+    border: 3px solid var(--black);
+    box-shadow: var(--shadow-sm);
+    padding: 10px 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+}
+
+.neo-btn:active {
+    box-shadow: none;
+    transform: translate(3px, 3px);
+}
+
+.neo-btn-sm {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border-width: 2px;
+}
+
+.neo-btn-red   { background: var(--red);   color: white; }
+.neo-btn-green { background: var(--green); color: #1A1A1A; }
+.neo-btn-blue  { background: var(--blue);  color: white; }
+
+.neo-input {
+    width: 100%;
+    padding: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 3px solid var(--black);
+    font-family: inherit;
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+    outline: none;
+}
+
+.neo-badge {
+    /* Background varian-nya (badge-id, badge-status-on, dll.) ber-fill
+       terang — paksa teks dekat-hitam supaya legible di light maupun
+       dark mode. Untuk varian gelap (.badge-keluar, .badge-white) kita
+       override eksplisit di rule masing-masing. */
+    color: #1A1A1A;
+    border: 2px solid var(--black);
+    padding: 4px 10px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+/* Varian warna .neo-badge — menggantikan inline `style="background: ..."`. */
+.badge-yellow      { background: var(--yellow); }
+.badge-green       { background: var(--green); }
+.badge-gray        { background: var(--gray); }
+.badge-white       { background: var(--surface); color: var(--ink); }
+.badge-status-on   { background: var(--green); }
+.badge-status-off  { background: var(--gray); color: var(--ink); }
+.badge-id          { background: var(--yellow); }
+.badge-keluar      { background: var(--red); color: white; margin-bottom: 10px; }
+
+/* ---------- HEADER ---------- */
+header {
+    background: var(--white);
+    border-bottom: 4px solid var(--black);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo {
+    font-weight: 900;
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Group status badges di header. */
+.header-status-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* ---------- THEME TOGGLE ---------- */
+/* Tombol 🌙/☀ di header. Compact, square-ish, tetap berbentuk
+   neobrutalism (border 3px + shadow blok). Klik → flip class
+   `dark-mode` di body, persisted ke localStorage oleh dashboard.js. */
+.theme-toggle {
+    width: 40px;
+    height: 40px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 3px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+    padding: 0;
+}
+
+.theme-toggle:active {
+    box-shadow: none;
+    transform: translate(3px, 3px);
+}
+
+/* Mobile: tombol toggle ikut jadi prioritas terakhir saat header
+   wrap, tapi tetap reachable. */
+@media (max-width: 600px) {
+    .theme-toggle { width: 36px; height: 36px; }
+}
+
+/* ---------- TABS ---------- */
+.tabs-nav {
+    display: flex;
+    gap: 20px;
+    padding: 20px 30px 0 30px;
+}
+
+.tab-link {
+    background: var(--white);
+    border: 3px solid var(--black);
+    border-bottom: none;
+    padding: 10px 25px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 4px 0px 0px 0px var(--black);
+    transform: translateY(3px);
+    transition: all 0.2s;
+}
+
+.tab-link.active {
+    background: var(--blue);
+    color: var(--white);
+    transform: translateY(0);
+    padding-bottom: 13px;
+}
+
+/* ---------- MAIN LAYOUT ---------- */
+.tab-content {
+    display: none;
+    padding: 30px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 30px;
+    height: calc(100vh - 200px);
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    border: 4px solid var(--black);
+    box-shadow: var(--shadow);
+}
+
+.sidebar {
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.section-title {
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    font-weight: 900;
+}
+
+.section-title--mt {
+    margin: 25px 0 15px 0;
+    text-transform: uppercase;
+    font-weight: 900;
+}
+
+/* Toolbar di tab "Kelola Pendaki". */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toolbar__title {
+    text-transform: uppercase;
+    font-weight: 900;
+}
+
+.toolbar__actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Filter bar (search + radio status). */
+.filter-bar {
+    display: flex;
+    gap: 15px;
+}
+
+.filter-bar__radios {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-weight: 700;
+}
+
+/* ---------- IN-APP ALERT BANNER (Task UI #6) ---------- */
+/* Banner sticky di tab "Peta Live" yang muncul saat ≥1 pendaki keluar
+   buffer geofence. Klik banner → scroll ke kartu alert pertama di
+   sidebar. Hidden via attribute `hidden` saat tidak ada pelanggaran. */
+.map-alert-banner {
+    background: var(--red);
+    color: var(--white);
+    border: 4px solid var(--black);
+    box-shadow: var(--shadow);
+    padding: 14px 22px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    animation: pulse 2s infinite;
+}
+
+.map-alert-banner[hidden] {
+    display: none;
+}
+
+.map-alert-banner__icon {
+    font-size: 1.4rem;
+}
+
+.map-alert-banner__text {
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.map-alert-banner__cta {
+    background: var(--white);
+    color: var(--black);
+    border: 3px solid var(--black);
+    padding: 6px 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.map-alert-banner__cta:active {
+    transform: translate(2px, 2px);
+}
+
+/* ---------- ALERT / STANDBY CARDS (di sidebar) ---------- */
+.alert-card {
+    border-left: 10px solid var(--red);
+    padding: 15px;
+    animation: pulse 2s infinite;
+}
+
+.alert-card__name {
+    font-weight: 900;
+    font-size: 1.1rem;
+}
+
+.alert-card__meta {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.alert-card__actions {
+    display: flex;
+    gap: 8px;
+}
+
+.standby-card {
+    padding: 15px;
+    /* Sedikit lebih lembut dari .neo-card supaya kartu standby tidak
+       "berteriak" sekuat alert card. Pakai variabel agar dark-mode
+       otomatis ikut shift ke shade gelap. */
+    background: var(--bg);
+}
+
+.standby-card__name {
+    font-weight: 800;
+}
+
+.standby-card__meta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.all-safe-card {
+    background: var(--green);
+    text-align: center;
+    font-weight: 900;
+}
+
+.empty-message {
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ---------- TABLES ---------- */
+.neo-table-container {
+    overflow-x: auto;
+    border: 4px solid var(--black);
+    box-shadow: var(--shadow);
+    background: var(--white);
+}
+
+.neo-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.neo-table th {
+    background: var(--black);
+    color: var(--white);
+    padding: 15px;
+    text-transform: uppercase;
+    font-weight: 900;
+}
+
+.neo-table td {
+    padding: 15px;
+    border-bottom: 3px solid var(--black);
+    font-weight: 700;
+}
+
+.history-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* ---------- MODALS ---------- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 500px;
+    background: var(--bg);
+    border: 4px solid var(--black);
+    box-shadow: 10px 10px 0px 0px var(--black);
+    padding: 40px;
+    position: relative;
+}
+
+.modal-content--lg { max-width: 800px; }
+.modal-content--sm { max-width: 400px; text-align: center; }
+
+.modal-title {
+    text-transform: uppercase;
+    font-weight: 900;
+    margin-bottom: 25px;
+}
+
+.modal-title--detail  { margin-bottom: 20px; }
+.modal-title--confirm { margin-bottom: 15px; }
+
+.modal-detail-grid {
+    grid-template-columns: 1fr 250px;
+    height: 400px;
+    gap: 20px;
+}
+
+.modal-detail-mini {
+    border: 3px solid var(--black);
+    height: 100%;
+}
+
+.modal-detail-stats {
+    background: var(--white);
+    border: 3px solid var(--black);
+    padding: 15px;
+}
+
+.stats-heading {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.stats-list {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.stats-item { margin-bottom: 10px; }
+
+.stats-time {
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.stats-divider {
+    margin: 15px 0;
+    border: 1px dashed var(--black);
+}
+
+.stats-info { font-size: 0.8rem; }
+
+.modal-detail-footer {
+    margin-top: 25px;
+    text-align: right;
+}
+
+.confirm-msg {
+    font-weight: 700;
+    margin-bottom: 25px;
+}
+
+.form-group { margin-bottom: 15px; }
+.form-group--last { margin-bottom: 25px; }
+
+.form-label {
+    font-weight: 900;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.modal-form-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-flex { flex: 1; }
+
+.input-select-white { background: white; }
+
+/* ---------- TOASTS ---------- */
+#toast-container {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.toast {
+    background: var(--white);
+    border: 3px solid var(--black);
+    box-shadow: var(--shadow-sm);
+    padding: 15px 25px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s forwards;
+    border-left: 10px solid var(--yellow);
+}
+
+.toast--success { border-left-color: var(--green); }
+.toast--error   { border-left-color: var(--red); }
+.toast--info    { border-left-color: var(--yellow); }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+
+/* ---------- NOTIFICATION REQUEST PANEL ---------- */
+/* Panel `#notif-request` di-display:none secara default; di-show via
+   JS (`window.load`) saat permission masih "default" dan operator
+   belum men-dismiss. Layout default = flex saat di-show. */
+.notification-request {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    background: var(--white);
+    border: 3px solid var(--black);
+    box-shadow: var(--shadow);
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 320px;
+    z-index: 2500;
+}
+
+.notif-prompt-text {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.notif-prompt-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* ---------- STATUS DOTS ---------- */
+.dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--black);
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-green { background: var(--green); }
+.dot-red   { background: var(--red); }
+
+/* ---------- ANIMATIONS ---------- */
+@keyframes pulse {
+    0%   { transform: scale(1);    box-shadow: var(--shadow); }
+    50%  { transform: scale(1.02); box-shadow: 8px 8px 0px 0px var(--red); }
+    100% { transform: scale(1);    box-shadow: var(--shadow); }
+}
+
+/* ---------- WAYPOINT ICON (Leaflet divIcon) ---------- */
+.waypoint-icon {
+    font-size: 18px;
+    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1000px) {
+    .dashboard-grid { grid-template-columns: 1fr; height: auto; }
+    #map { height: 400px; }
+}
+
+@media (max-width: 600px) {
+    header {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 15px;
+    }
+    .logo { font-size: 1.4rem; }
+    .tabs-nav { gap: 5px; padding: 10px 15px 0; }
+    .tab-link { padding: 8px 12px; font-size: 0.8rem; }
+    .tab-content { padding: 15px; }
+    #map { height: 55vh; min-height: 300px; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .sidebar { height: auto; max-height: 400px; }
+
+    .hide-mobile { display: none; }
+
+    .neo-table th:nth-child(3),
+    .neo-table td:nth-child(3),
+    .neo-table th:nth-child(5),
+    .neo-table td:nth-child(5) {
+        display: none;
+    }
+
+    .map-alert-banner {
+        flex-wrap: wrap;
+        padding: 12px 16px;
+    }
+    .map-alert-banner__cta {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .notification-request {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        max-width: none;
+    }
+}

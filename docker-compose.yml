@@ -1,44 +1,91 @@
-version: '3.8'
+# =====================================================================
+# ALTIVEX backend — production-ready compose
+# ---------------------------------------------------------------------
+# Sebelum `docker compose up -d` PERTAMA KALI:
+#   1. Copy `.env.example` → `.env`. Isi dengan secret produksi.
+#   2. Generate `mosquitto/config/passwd`:
+#        docker run --rm -v "$PWD/mosquitto/config":/work \
+#            -w /work eclipse-mosquitto:latest \
+#            mosquitto_passwd -b -c passwd <username> <password>
+#      Username + password harus match `MQTT_USERNAME` / `MQTT_PASSWORD`
+#      di `.env`. File `passwd` SHALL NOT di-commit (ada di .gitignore).
+#   3. Verifikasi `.env` punya `API_AUTH_TOKEN` dengan token panjang
+#      acak (mis. `openssl rand -hex 32`).
+#
+# Reverse proxy (nginx / traefik) di-deploy di luar compose ini untuk
+# TLS termination + routing /api/* ke backend.
+# =====================================================================
 
 services:
   postgres:
     image: postgres:15-alpine
     container_name: altivex_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-altivex}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rahasia}
-      POSTGRES_DB: ${POSTGRES_DB:-altivex_db}
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER belum diset di .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD belum diset di .env}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB belum diset di .env}
+    # Tidak publish port 5432 ke host — backend akses lewat hostname
+    # `postgres:5432` di network compose internal. Aktifkan baris di
+    # bawah hanya untuk debugging local DB connection.
+    # ports:
+    #   - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2
     container_name: altivex_mosquitto
-    ports:
-      - "1883:1883"
-      - "9001:9001"
+    # Port 1883 TIDAK dipublish ke host (Bug B2 — Task 3.7). Container
+    # backend menjangkau lewat `mosquitto:1883` di network internal.
+    # Aktifkan publish hanya jika benar-benar perlu klien eksternal,
+    # dan pastikan TLS aktif sebelumnya.
+    expose:
+      - "1883"
+    # Port 9001 (websocket MQTT) — aktifkan kalau frontend perlu
+    # subscribe MQTT langsung. Default-nya off.
+    # ports:
+    #   - "9001:9001"
     volumes:
-      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/config:/mosquitto/config:ro
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     restart: always
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: altivex_backend
     depends_on:
-      - postgres
-      - mosquitto
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
-      - MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-1883}
-      - SERIAL_PORT=${SERIAL_PORT:-/dev/ttyUSB0}
+      # `?` operator: gagal-loud kalau env wajib belum di-set di host.
+      # Lebih baik daripada fallback diam-diam ke nilai default yang
+      # tidak aman di production.
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL belum diset di .env}
+      MQTT_BROKER_HOST: ${MQTT_BROKER_HOST:-mosquitto}
+      MQTT_BROKER_PORT: ${MQTT_BROKER_PORT:-1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:?MQTT_USERNAME belum diset di .env}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?MQTT_PASSWORD belum diset di .env}
+      API_AUTH_TOKEN: ${API_AUTH_TOKEN:?API_AUTH_TOKEN belum diset di .env}
+      SERIAL_PORT: ${SERIAL_PORT:-/dev/ttyUSB0}
+      RUST_LOG: ${RUST_LOG:-info}
+    # Akses ke port serial host (kalau memang ada Heltec basecamp
+    # dicolok ke server). Comment baris ini di lingkungan tanpa
+    # perangkat serial.
+    # devices:
+    #   - "/dev/ttyUSB0:/dev/ttyUSB0"
     restart: always
 
 volumes:

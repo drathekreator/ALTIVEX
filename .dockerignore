@@ -1,6 +1,41 @@
+# Build artifacts & cache
 target/
 **/*.rs.bk
+
+# Secrets & local config
 .env
+*.env
+!.env.example
+
+# Docker context — tidak perlu di-include ke image
 Dockerfile
+.dockerignore
 docker-compose.yml
+
+# Mosquitto config + state — di-mount via compose volume
 mosquitto/
+
+# Frontend dev assets — image hanya butuh static files, bukan node_modules
+frontend/node_modules/
+frontend/package-lock.json
+frontend/package.json
+frontend/vitest.config.js
+frontend/tests/
+frontend/previews/
+
+# Spec docs — tidak perlu di runtime
+.kiro/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test artifacts
+tests/*.proptest-regressions
+run_pres_test.sh
