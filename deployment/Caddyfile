@@ -1,0 +1,41 @@
+# =====================================================================
+# ALTIVEX — Caddy reverse proxy + TLS otomatis
+# ---------------------------------------------------------------------
+# Caddy meng-handle:
+#   1. TLS termination via Let's Encrypt (otomatis, auto-renew).
+#   2. Routing semua request ke service `backend:8080` di docker
+#      network internal — backend tidak publish port ke host.
+#   3. WebSocket upgrade untuk `/ws`.
+#   4. Compression gzip + zstd otomatis.
+#
+# SEBELUM DEPLOY:
+#   - Ganti `altivex.example.com` dengan domain Anda.
+#   - Pastikan A record domain → IP eksternal VM GCP.
+#   - Pastikan port 80 + 443 terbuka di firewall GCP.
+# =====================================================================
+
+altivex.example.com {
+    # Reverse proxy ke backend container.
+    # Caddy auto-detect WebSocket upgrade — tidak perlu config khusus
+    # untuk /ws.
+    reverse_proxy backend:8080
+
+    # Logging request → stdout (di-capture docker logs).
+    log {
+        output stdout
+        format console
+    }
+
+    # Header keamanan dasar.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Hapus header Server bawaan supaya tidak bocor versi.
+        -Server
+    }
+
+    # Compression (Caddy v2 default sudah encode gzip + zstd).
+    encode zstd gzip
+}

@@ -1,0 +1,52 @@
+# =====================================================================
+# ALTIVEX — Production overlay untuk docker-compose
+# ---------------------------------------------------------------------
+# Pakai BERSAMA `docker-compose.yml` dasar (di parent dir):
+#
+#   cd altivex_backend
+#   docker compose -f docker-compose.yml -f deployment/docker-compose.prod.yml up -d --build
+#
+# Yang di-override di sini:
+#   1. Backend tidak publish port 8080 ke host — Caddy yang handle TLS
+#      + routing dari port 443 publik.
+#   2. Tambah service `caddy` untuk reverse proxy + Let's Encrypt.
+#   3. Set restart policy yang lebih aggressive untuk produksi.
+#
+# Sebelum jalan PERTAMA KALI:
+#   - Edit `deployment/Caddyfile` → ganti domain.
+#   - DNS A record domain → IP eksternal VM.
+#   - Firewall GCP buka port 80 + 443.
+# =====================================================================
+
+services:
+  postgres:
+    restart: unless-stopped
+    # Volumes Postgres tetap mengikuti compose dasar.
+
+  mosquitto:
+    restart: unless-stopped
+
+  backend:
+    restart: unless-stopped
+    # Override: TIDAK publish 8080 ke host. Caddy akses lewat
+    # network internal compose.
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: altivex_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # cert Let's Encrypt + state
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
