@@ -79,6 +79,8 @@ services:
       MQTT_USERNAME: ${MQTT_USERNAME:?MQTT_USERNAME belum diset di .env}
       MQTT_PASSWORD: ${MQTT_PASSWORD:?MQTT_PASSWORD belum diset di .env}
       API_AUTH_TOKEN: ${API_AUTH_TOKEN:?API_AUTH_TOKEN belum diset di .env}
+      BASECAMP_USERNAME: ${BASECAMP_USERNAME:?BASECAMP_USERNAME belum diset di .env}
+      BASECAMP_PASSWORD: ${BASECAMP_PASSWORD:?BASECAMP_PASSWORD belum diset di .env}
       SERIAL_PORT: ${SERIAL_PORT:-/dev/ttyUSB0}
       RUST_LOG: ${RUST_LOG:-info}
     # Akses ke port serial host (kalau memang ada Heltec basecamp

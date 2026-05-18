@@ -1087,12 +1087,88 @@ async fn ws_index(
 /// Resource auth yang di-share via `web::Data`. Token dibaca SEKALI di
 /// startup; bila ingin rotasi, restart proses sesuai pola env-driven
 /// config existing.
+///
+/// Login flow (UI #4 user feedback):
+/// - `username` + `password` di-set lewat env `BASECAMP_USERNAME` /
+///   `BASECAMP_PASSWORD`. Endpoint `POST /api/login` membandingkan body
+///   request dengan dua nilai ini secara constant-time (`subtle`-style
+///   manual byte-wise eq). Sukses → return `{ token: API_AUTH_TOKEN }`
+///   yang langsung disimpan frontend ke localStorage.
+/// - Backend AuthMiddleware tetap memvalidasi `Authorization: Bearer
+///   <token>` seperti sebelumnya — login flow hanya selapis UX di atas
+///   token mechanism existing, tidak rombak skema otorisasi.
 #[derive(Clone)]
 struct AuthConfig {
     /// Token yang diharapkan pada header `Authorization: Bearer <token>`.
     /// `String::new()` saat env tidak diset; middleware akan menolak semua
     /// request non-public dengan 503 sampai operator memperbaiki config.
     token: String,
+    /// Username basecamp single-user. Kosong saat env tidak diset →
+    /// `/api/login` tetap aktif tapi ALWAYS reject (tidak boleh fallback
+    /// ke "siapa saja boleh login" — fail-closed).
+    username: String,
+    /// Password plaintext (env-driven). Untuk versi single-user kita
+    /// belum perlu password hash di DB — operator basecamp = 1 orang,
+    /// kredensial hanya berpindah lewat secret env yang sudah di-protect.
+    /// TODO multi-user: ganti ke argon2 hash di tabel `users`.
+    password: String,
+}
+
+#[derive(Deserialize)]
+struct LoginRequest {
+    username: String,
+    password: String,
+}
+
+#[derive(Serialize)]
+struct LoginResponse {
+    token: String,
+}
+
+/// `POST /api/login` — UX gate untuk operator basecamp.
+///
+/// Constant-time compare via byte-wise iteration (sederhana dibanding
+/// `subtle::ConstantTimeEq` tapi cukup karena kita selalu compare dua
+/// string dengan panjang yang sama setelah panjang-checked di awal).
+async fn login(
+    body: web::Json<LoginRequest>,
+    auth: web::Data<AuthConfig>,
+) -> impl Responder {
+    // Misconfig: backend belum punya kredensial yang bisa dicocokkan
+    // → fail-loud 503 (sama pattern dengan token kosong).
+    if auth.username.is_empty() || auth.password.is_empty() || auth.token.is_empty() {
+        return HttpResponse::ServiceUnavailable()
+            .body("Login belum dikonfigurasi: BASECAMP_USERNAME / BASECAMP_PASSWORD / API_AUTH_TOKEN harus di-set di .env");
+    }
+
+    // Constant-time compare. Kita tetap loop sampai akhir even when
+    // mismatch ditemukan supaya waktu eksekusi tidak bocor "berapa
+    // karakter awal yang match" (timing attack).
+    fn ct_eq(a: &str, b: &str) -> bool {
+        if a.len() != b.len() {
+            return false;
+        }
+        let mut diff: u8 = 0;
+        for (x, y) in a.bytes().zip(b.bytes()) {
+            diff |= x ^ y;
+        }
+        diff == 0
+    }
+
+    let user_ok = ct_eq(&body.username, &auth.username);
+    let pass_ok = ct_eq(&body.password, &auth.password);
+
+    if !(user_ok && pass_ok) {
+        // Body singkat — tidak boleh leak informasi "username valid tapi
+        // password salah" karena itu enumerasi user.
+        return HttpResponse::Unauthorized()
+            .body("Username atau password salah.");
+    }
+
+    // Sukses — kembalikan token API. Frontend simpan ke localStorage.
+    HttpResponse::Ok().json(LoginResponse {
+        token: auth.token.clone(),
+    })
 }
 
 /// Daftar path publik. Pakai prefix-match (mis. `/` cocok untuk segala
@@ -1106,7 +1182,7 @@ struct AuthConfig {
 fn is_public_path(path: &str) -> bool {
     // Endpoint API publik & WS — match exact (tidak boleh kebobolan
     // path yang kebetulan diawali `/api/status`).
-    if path == "/api/status" || path == "/ws" {
+    if path == "/api/status" || path == "/ws" || path == "/api/login" {
         return true;
     }
     // Static asset publik. `Files` melayani `/`, `/index.html`,
@@ -1284,6 +1360,8 @@ async fn main() -> std::io::Result<()> {
     // membuat middleware menolak semua request non-public dengan 503
     // (fail-loud) — operator HARUS set env sebelum deploy.
     let api_auth_token = env::var("API_AUTH_TOKEN").unwrap_or_default();
+    let basecamp_username = env::var("BASECAMP_USERNAME").unwrap_or_default();
+    let basecamp_password = env::var("BASECAMP_PASSWORD").unwrap_or_default();
     if api_auth_token.is_empty() {
         println!(
             "⚠️  API_AUTH_TOKEN belum diset — endpoint mutating akan menolak \
@@ -1292,7 +1370,19 @@ async fn main() -> std::io::Result<()> {
     } else {
         println!("🔐 AuthMiddleware aktif untuk endpoint mutating.");
     }
-    let auth_config_data = web::Data::new(AuthConfig { token: api_auth_token });
+    if basecamp_username.is_empty() || basecamp_password.is_empty() {
+        println!(
+            "⚠️  BASECAMP_USERNAME / BASECAMP_PASSWORD belum diset — \
+             /api/login akan menolak semua request sampai env diisi."
+        );
+    } else {
+        println!("🔑 Login basecamp aktif untuk user: {}", basecamp_username);
+    }
+    let auth_config_data = web::Data::new(AuthConfig {
+        token: api_auth_token,
+        username: basecamp_username,
+        password: basecamp_password,
+    });
 
     // Mendaftarkan Endpoint (Routing URL)
     HttpServer::new(move || {
@@ -1319,6 +1409,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/pendaki/{id}/selesai", web::put().to(selesaikan_pendakian))
             .route("/api/alert", web::post().to(kirim_peringatan))
             .route("/api/status", web::get().to(cek_status))
+            .route("/api/login", web::post().to(login))
             .route("/ws", web::get().to(ws_index))
             .service(Files::new("/", "./frontend").index_file("index.html"))
     })

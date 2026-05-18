@@ -25,50 +25,141 @@
    ===================================================================== */
 
 // ====================================================================
-// API Auth Token (Task 3.8 — Bug B3)
+// API Auth Token + Login (UI #4 feedback)
+// --------------------------------------------------------------------
+// Operator tidak lagi paste token mentah ke browser prompt(). Alur:
+//   1. Saat dashboard load, cek `localStorage[TOKEN_STORAGE_KEY]`.
+//      Kosong → tampilkan login modal `#modal-login`. Form submit →
+//      `POST /api/login {username, password}` → backend validasi
+//      constant-time → return `{token}` → simpan ke localStorage.
+//   2. Saat fetch balik 401 → clear token + tampilkan login modal lagi
+//      (token di-rotate / sesi invalid).
+//   3. Tombol logout di header bersihkan token + tampilkan login modal.
+//
+// Backend tetap pakai `Authorization: Bearer <token>` untuk semua
+// endpoint mutating. Login modal hanya UX layer — token mechanism
+// tidak rombak.
 // ====================================================================
 const TOKEN_STORAGE_KEY = "ALTIVEX_API_TOKEN";
 
-function getApiToken() {
-    let t = null;
-    try { t = localStorage.getItem(TOKEN_STORAGE_KEY); } catch (e) { t = null; }
-    if (!t) {
-        const input = window.prompt("Masukkan API token ALTIVEX:");
-        if (input && input.trim()) {
-            t = input.trim();
-            try { localStorage.setItem(TOKEN_STORAGE_KEY, t); } catch (e) {}
-        } else {
-            t = "";
-        }
-    }
-    return t || "";
+function getStoredToken() {
+    try { return localStorage.getItem(TOKEN_STORAGE_KEY) || ""; }
+    catch (e) { return ""; }
 }
 
-let __altivexTokenReprompted = false;
+function setStoredToken(t) {
+    try { localStorage.setItem(TOKEN_STORAGE_KEY, t); } catch (e) {}
+}
+
 function clearApiToken() {
     try { localStorage.removeItem(TOKEN_STORAGE_KEY); } catch (e) {}
 }
 
+function showLoginModal() {
+    const modal = document.getElementById("modal-login");
+    if (modal) {
+        modal.style.display = "flex";
+        // Reset error state setiap kali modal di-show.
+        const err = document.getElementById("login-error");
+        if (err) err.hidden = true;
+        // Auto-focus username untuk operator basecamp keyboard-first.
+        const u = document.getElementById("login-username");
+        if (u) setTimeout(() => u.focus(), 50);
+    }
+    const logout = document.getElementById("logout-btn");
+    if (logout) logout.hidden = true;
+}
+
+function hideLoginModal() {
+    const modal = document.getElementById("modal-login");
+    if (modal) modal.style.display = "none";
+    const logout = document.getElementById("logout-btn");
+    if (logout) logout.hidden = false;
+}
+
+async function handleLoginSubmit(ev) {
+    ev.preventDefault();
+    const u = document.getElementById("login-username").value.trim();
+    const p = document.getElementById("login-password").value;
+    const err = document.getElementById("login-error");
+    const btn = ev.target.querySelector('button[type="submit"]');
+
+    if (!u || !p) {
+        err.textContent = "Username dan password wajib diisi.";
+        err.hidden = false;
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "🔄 MEMVERIFIKASI...";
+
+    try {
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: u, password: p }),
+        });
+        if (res.status === 401) {
+            err.textContent = "Username atau password salah.";
+            err.hidden = false;
+            return;
+        }
+        if (res.status === 503) {
+            err.textContent = "Login belum dikonfigurasi di server. Hubungi admin.";
+            err.hidden = false;
+            return;
+        }
+        if (!res.ok) {
+            err.textContent = `Server error (${res.status}). Coba lagi.`;
+            err.hidden = false;
+            return;
+        }
+        const json = await res.json();
+        if (!json || !json.token) {
+            err.textContent = "Respons server tidak valid.";
+            err.hidden = false;
+            return;
+        }
+        setStoredToken(json.token);
+        hideLoginModal();
+        // Reset password field (keep username untuk convenience).
+        document.getElementById("login-password").value = "";
+        showToast("✅ Login berhasil", "success");
+        // Trigger reload data setelah login.
+        fetchInitialSensorData();
+        fetchPendakiAktif();
+    } catch (e) {
+        err.textContent = "Tidak bisa terhubung ke server.";
+        err.hidden = false;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "🔓 MASUK";
+    }
+}
+
+function logout() {
+    clearApiToken();
+    showLoginModal();
+    showToast("👋 Logout berhasil", "info");
+}
+
+let __altivexLoginShown = false;
 async function apiFetch(url, options) {
+    // Kalau token belum ada, biarkan login modal yang menangani —
+    // tetap kirim request (mungkin endpoint publik) tanpa Authorization.
     const opts = options ? Object.assign({}, options) : {};
     const headers = new Headers(opts.headers || {});
-    const token = getApiToken();
+    const token = getStoredToken();
     if (token) headers.set("Authorization", "Bearer " + token);
     opts.headers = headers;
 
-    let res = await fetch(url, opts);
-    if (res.status === 401 && !__altivexTokenReprompted) {
-        __altivexTokenReprompted = true;
+    const res = await fetch(url, opts);
+    if (res.status === 401) {
+        // Sesi invalid — clear token + tampilkan login modal sekali.
         clearApiToken();
-        if (typeof showToast === "function") {
-            showToast("⚠️ Token tidak valid, silakan masukkan ulang", "error");
-        }
-        const newToken = getApiToken();
-        if (newToken) {
-            const headers2 = new Headers((options && options.headers) || {});
-            headers2.set("Authorization", "Bearer " + newToken);
-            const opts2 = options ? Object.assign({}, options, { headers: headers2 }) : { headers: headers2 };
-            res = await fetch(url, opts2);
+        if (!__altivexLoginShown) {
+            __altivexLoginShown = true;
+            showLoginModal();
         }
     }
     return res;
@@ -1019,6 +1110,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (themeBtn) {
         applyTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light');
         themeBtn.addEventListener('click', toggleTheme);
+    }
+
+    // Login form (UI #4). Submit handler + show/hide modal di awal
+    // bergantung apakah token sudah tersimpan.
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.addEventListener('submit', handleLoginSubmit);
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+    // Initial gate: kalau belum punya token, tampilkan login modal +
+    // sembunyikan logout. Sebaliknya, hide modal + show logout.
+    if (getStoredToken()) {
+        hideLoginModal();
+    } else {
+        showLoginModal();
     }
 
     // Listen ke perubahan system preference, tapi HANYA terapkan kalau

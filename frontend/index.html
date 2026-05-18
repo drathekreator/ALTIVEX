@@ -54,6 +54,12 @@
                     aria-label="Aktifkan dark mode"
                     aria-pressed="false"
                     title="Toggle theme">🌙</button>
+                <button
+                    id="logout-btn"
+                    type="button"
+                    class="theme-toggle logout-btn"
+                    aria-label="Logout"
+                    title="Keluar">↪</button>
             </div>
         </header>
 
@@ -200,6 +206,35 @@
                     <button id="confirm-yes" class="neo-btn neo-btn-red btn-flex">YA, LANJUTKAN</button>
                     <button class="neo-btn btn-flex" onclick="closeConfirm()">BATAL</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- MODAL LOGIN -->
+        <!-- Login page menggantikan prompt() token (UI #4 feedback).
+             Tampil di atas semua konten saat token belum ada di
+             localStorage atau token invalid (401). Form simple:
+             username + password → POST /api/login → simpan token. -->
+        <div id="modal-login" class="modal-overlay modal-overlay--auth">
+            <div class="modal-content modal-content--auth">
+                <div class="login-brand">
+                    <span class="login-brand__icon">⛰️</span>
+                    <span class="login-brand__name">ALTIVEX</span>
+                </div>
+                <h2 class="modal-title login-heading">Login Basecamp</h2>
+                <p class="login-subtitle">Masuk untuk mengakses dashboard pemantauan pendaki.</p>
+
+                <form id="login-form" class="login-form" autocomplete="on">
+                    <div class="form-group">
+                        <label class="form-label" for="login-username">Username</label>
+                        <input type="text" id="login-username" name="username" class="neo-input" autocomplete="username" required>
+                    </div>
+                    <div class="form-group form-group--last">
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" id="login-password" name="password" class="neo-input" autocomplete="current-password" required>
+                    </div>
+                    <p id="login-error" class="login-error" hidden></p>
+                    <button type="submit" class="neo-btn neo-btn-green btn-flex">🔓 MASUK</button>
+                </form>
             </div>
         </div>
 

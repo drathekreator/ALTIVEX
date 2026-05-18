@@ -795,6 +795,79 @@ body.dark-mode .input-select-white option {
     filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
 }
 
+/* ---------- LOGIN PAGE (UI #4) ---------- */
+/* Login modal di-show oleh dashboard.js saat token belum ada di
+   localStorage atau request balik 401. Pakai modal-overlay yang sama
+   tapi dengan class `modal-overlay--auth` untuk full-bleed background
+   (operator tidak boleh klik dashboard sebelum login). */
+.modal-overlay--auth {
+    background: var(--bg);
+    /* Selalu tampil sampai JS toggle off — pakai display: flex, override
+       default `display: none` dari .modal-overlay. */
+    display: flex;
+}
+
+.modal-content--auth {
+    max-width: 420px;
+    background: var(--surface);
+    text-align: center;
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 900;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
+    color: var(--ink);
+}
+
+.login-brand__icon {
+    font-size: 1.6rem;
+}
+
+.login-heading {
+    margin-bottom: 8px;
+    font-size: 1.6rem;
+}
+
+.login-subtitle {
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+}
+
+.login-form .form-group {
+    text-align: left;
+}
+
+.login-error {
+    background: var(--red);
+    color: white;
+    border: 3px solid var(--line);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+.login-error[hidden] {
+    display: none;
+}
+
+.logout-btn {
+    font-size: 1.1rem;
+}
+
+.logout-btn[hidden] {
+    display: none;
+}
+
 /* ---------- LOADING SKELETON ---------- */
 /* Skeleton placeholder muncul saat sidebar/banner belum sempat
    re-populate setelah refresh — terutama di mobile yang koneksinya
