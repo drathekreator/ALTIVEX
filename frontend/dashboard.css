@@ -636,7 +636,52 @@ header {
 
 .btn-flex { flex: 1; }
 
-.input-select-white { background: white; }
+/* `<select>` di neobrutalism: native control yang dirender browser
+   tidak inherit warna dari `body.dark-mode` — `option` gambar lewat OS,
+   bukan CSS. Kita tetap paksa background select-nya cream/dark sesuai
+   token, dan styling `option` lewat selektor `select option` (Chrome /
+   Firefox honor; Safari iOS terbatas tapi setidaknya kontras tidak
+   sepenuhnya hilang). */
+.input-select-white,
+select.neo-input {
+    background: var(--surface);
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+        linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+    background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 12px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 32px;
+}
+
+select.neo-input option,
+.input-select-white option {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+}
+
+/* Dark mode: paksa option-nya gelap supaya tidak ke-flip oleh OS
+   default. */
+body.dark-mode select.neo-input,
+body.dark-mode .input-select-white {
+    background-color: var(--surface);
+    color: var(--ink);
+    /* color-scheme memberi sinyal ke browser supaya native dropdown
+       (Chromium) ikut tema gelap. Tanpa ini, dropdown tetap putih. */
+    color-scheme: dark;
+}
+
+body.dark-mode select.neo-input option,
+body.dark-mode .input-select-white option {
+    background-color: var(--surface);
+    color: var(--ink);
+}
 
 /* ---------- TOASTS ---------- */
 #toast-container {
@@ -725,6 +770,36 @@ header {
     filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
 }
 
+/* ---------- LOADING SKELETON ---------- */
+/* Skeleton placeholder muncul saat sidebar/banner belum sempat
+   re-populate setelah refresh — terutama di mobile yang koneksinya
+   lambat. Operator lihat "loading..." daripada UI kosong + curiga
+   data hilang. Skeleton dihapus oleh _renderHikerCards begitu
+   render pertama jalan. */
+.skeleton-card {
+    background: var(--surface);
+    border: 3px dashed var(--line);
+    padding: 18px;
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-card::before {
+    content: "⏳";
+    font-size: 1.1rem;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 1000px) {
     .dashboard-grid { grid-template-columns: 1fr; height: auto; }
@@ -747,11 +822,108 @@ header {
 
     .hide-mobile { display: none; }
 
-    .neo-table th:nth-child(3),
-    .neo-table td:nth-child(3),
-    .neo-table th:nth-child(5),
-    .neo-table td:nth-child(5) {
+    /* ----- Toolbar Kelola Pendaki: stack vertikal di mobile ----- */
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    .toolbar__title {
+        font-size: 1rem;
+        line-height: 1.2;
+    }
+    .toolbar__actions {
+        flex-direction: row;
+        gap: 8px;
+    }
+    .toolbar__actions .neo-btn {
+        flex: 1;
+        justify-content: center;
+        white-space: nowrap;
+        font-size: 0.75rem;
+        padding: 10px 8px;
+    }
+
+    /* ----- Filter bar: search + radio group rapi ----- */
+    .filter-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .filter-bar__radios {
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.85rem;
+    }
+
+    /* ----- Card-ify riwayat pendaki di mobile -----
+       Native tabel jadi unreadable saat overflow horizontal di mobile.
+       Solusi: ubah tiap <tr> jadi block "kartu" dengan label inline
+       (data-label) di tiap cell. Header tabel disembunyikan; setiap
+       cell pakai pseudo `::before` untuk render label dari atribut
+       `data-label`. Markup HTML di renderHistoryTable() WAJIB tambah
+       `data-label="..."` di setiap td. */
+    .neo-table-container {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        overflow-x: visible;
+    }
+    .neo-table thead {
         display: none;
+    }
+    .neo-table,
+    .neo-table tbody,
+    .neo-table tr,
+    .neo-table td {
+        display: block;
+        width: 100%;
+    }
+    .neo-table tr {
+        background: var(--surface);
+        border: 4px solid var(--line);
+        box-shadow: var(--shadow);
+        margin-bottom: 16px;
+        padding: 14px 16px;
+    }
+    .neo-table td {
+        border: none;
+        padding: 6px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.85rem;
+    }
+    .neo-table td::before {
+        content: attr(data-label);
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        flex-shrink: 0;
+    }
+    /* Cell aksi punya konten kompleks (tombol-tombol), di-render
+       full-width, label di atas row buttons. */
+    .neo-table td.cell-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding-top: 10px;
+        border-top: 2px dashed var(--line);
+        margin-top: 6px;
+    }
+    .neo-table td.cell-actions::before {
+        text-align: left;
+    }
+    .neo-table td .history-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .neo-table td .history-actions .neo-btn {
+        flex: 1;
+        min-width: 80px;
+        justify-content: center;
     }
 
     .map-alert-banner {
@@ -768,5 +940,15 @@ header {
         right: 16px;
         bottom: 16px;
         max-width: none;
+    }
+
+    /* Modal di mobile: full-bleed dengan margin tipis. */
+    .modal-content {
+        padding: 24px 20px;
+        max-width: calc(100vw - 24px);
+        margin: 12px;
+    }
+    .modal-form-actions {
+        flex-direction: column;
     }
 }

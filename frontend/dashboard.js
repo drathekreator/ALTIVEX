@@ -464,16 +464,19 @@ function renderHistoryTable(data) {
         const actionBtns = (p.status === 'Mendaki')
             ? `<button class="neo-btn neo-btn-sm neo-btn-blue" data-action="finish" data-id-perangkat="${idPerangkatAttr}">✅ Selesai</button>`
             : `<button class="neo-btn neo-btn-sm neo-btn-red" data-action="delete" data-id="${idAttr}">🗑️</button>`;
+        // `data-label` dipakai oleh CSS `@media (max-width: 600px)` untuk
+        // me-render label inline saat tabel di-card-ify (tiap row jadi
+        // kartu vertikal, label di kiri, value di kanan).
         return `
             <tr>
-                <td>${escapeHtml(p.nama_pendaki)}</td>
-                <td><span class="neo-badge badge-id">${escapeHtml(p.id_perangkat)}</span></td>
-                <td class="hide-mobile">${escapeHtml(p.telepon_darurat)}</td>
-                <td>
+                <td data-label="Nama">${escapeHtml(p.nama_pendaki)}</td>
+                <td data-label="Alat"><span class="neo-badge badge-id">${escapeHtml(p.id_perangkat)}</span></td>
+                <td data-label="Telepon" class="hide-mobile">${escapeHtml(p.telepon_darurat)}</td>
+                <td data-label="Status">
                     <span class="neo-badge ${statusBadgeCls}">${escapeHtml(p.status)}</span>
                 </td>
-                <td class="hide-mobile">${escapeHtml(new Date(p.tanggal_naik).toLocaleString('id-ID'))}</td>
-                <td>
+                <td data-label="Waktu Naik" class="hide-mobile">${escapeHtml(new Date(p.tanggal_naik).toLocaleString('id-ID'))}</td>
+                <td data-label="Aksi" class="cell-actions">
                     <div class="history-actions">
                         ${actionBtns}
                         <button class="neo-btn neo-btn-sm" data-action="edit" data-id="${idAttr}">✏️</button>
@@ -980,6 +983,18 @@ async function fetchInitialSensorData() {
 // ====================================================================
 // INIT
 // ====================================================================
+// Skeleton placeholder awal — supaya operator yang baru refresh
+// di mobile (koneksi lambat) tidak salah sangka data hilang.
+// `_renderHikerCards` akan replace innerHTML ini begitu dapat data
+// pertama (lewat WS atau polling).
+(function paintInitialSkeleton() {
+    const hiker = document.getElementById('hiker_list');
+    const avail = document.getElementById('available_list');
+    const skeleton = '<div class="skeleton-card">Memuat data live...</div>';
+    if (hiker && !hiker.innerHTML.trim()) hiker.innerHTML = skeleton;
+    if (avail && !avail.innerHTML.trim()) avail.innerHTML = skeleton;
+})();
+
 setInterval(checkStatuses, 5000);
 // Polling /api/sensor/latest di-handle oleh `schedulePolling()` lewat
 // `connectWebSocket()` (interval menyesuaikan kondisi WS). Polling
