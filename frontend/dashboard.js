@@ -591,11 +591,50 @@ async function selesaikanPendakian(idAlat) {
 
 // ====================================================================
 // LIVE UPDATE LOGIC + IN-APP ALERT BANNER (Task UI #6)
+// --------------------------------------------------------------------
+// `geofenceBuffer` adalah FeatureCollection of polygons (hasil
+// `turf.buffer` atas FeatureCollection of LineString). turf 6
+// `booleanPointInPolygon` HANYA terima single Feature<Polygon|
+// MultiPolygon>. Saat dipanggil dengan FeatureCollection langsung,
+// turf throw `Cannot read properties of undefined (reading 'length')`
+// karena ia coba akses `.geometry.coordinates` di object yang berbeda
+// shape. Helper ini iterasi tiap fitur dan return true kalau salah satu
+// match — defensif & idempotent.
 // ====================================================================
+function pointInGeofence(point) {
+    if (!geofenceBuffer) return true; // fail-open kalau buffer belum siap
+    try {
+        if (geofenceBuffer.type === "FeatureCollection") {
+            for (const feat of (geofenceBuffer.features || [])) {
+                if (!feat || !feat.geometry) continue;
+                const t = feat.geometry.type;
+                if (t !== "Polygon" && t !== "MultiPolygon") continue;
+                if (turf.booleanPointInPolygon(point, feat)) return true;
+            }
+            return false;
+        }
+        // Single Feature/Polygon path
+        return turf.booleanPointInPolygon(point, geofenceBuffer);
+    } catch (e) {
+        // Kalau turf tetap meledak (mis. fitur tanpa coords), fail-open
+        // — lebih baik tampilkan kartu standby daripada UI mati total.
+        console.warn("[ALTIVEX] pointInGeofence error:", e);
+        return true;
+    }
+}
+
 let renderTimeout = null;
 function renderHikerCards() {
     if (renderTimeout) clearTimeout(renderTimeout);
-    renderTimeout = setTimeout(_renderHikerCards, 500);
+    renderTimeout = setTimeout(() => {
+        try {
+            _renderHikerCards();
+        } catch (e) {
+            // Last-resort guard: kalau render meledak, jangan kill init
+            // (peta + status bar tetap hidup). Catat untuk forensics.
+            console.error("[ALTIVEX] _renderHikerCards crashed:", e);
+        }
+    }, 500);
 }
 
 /**
@@ -642,8 +681,13 @@ function _renderHikerCards() {
 
     for (let id in latestDataPerDevice) {
         const data = latestDataPerDevice[id];
+        // Guard: payload korup / koordinat NaN — lewati supaya turf
+        // tidak meledak dan loop bisa lanjut ke device berikutnya.
+        if (!data || !Number.isFinite(data.latitude) || !Number.isFinite(data.longitude)) {
+            continue;
+        }
         const point = turf.point([data.longitude, data.latitude]);
-        const isInside = geofenceBuffer ? turf.booleanPointInPolygon(point, geofenceBuffer) : true;
+        const isInside = pointInGeofence(point);
         const hiker = registeredHikers[id];
 
         if (!activeMarkers[id]) {
