@@ -65,10 +65,14 @@ struct SensorRecord {
     longitude: f64,
 }
 
-/// Replika `Pendaki` (`main.rs` line ≈ 110). Field tanggal_naik
+/// Replika `Pendaki` (`main.rs`). Field tanggal_naik
 /// di-string-kan untuk kemudahan test (di produksi adalah
 /// `chrono::NaiveDateTime`, tapi shape JSON-nya tetap satu field
 /// `tanggal_naik`).
+///
+/// Update post-feedback: tambah `tanggal_turun: Option<String>` untuk
+/// match struct main.rs setelah field ini di-expose ke JSON. `None`
+/// → null di JSON, `Some(...)` → ISO-8601 timestamp.
 #[derive(Serialize, Clone, Debug)]
 struct Pendaki {
     id: i32,
@@ -77,6 +81,7 @@ struct Pendaki {
     telepon_darurat: String,
     tanggal_naik: String,
     status: String,
+    tanggal_turun: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -322,14 +327,17 @@ proptest! {
 // 3.6 — GET /api/pendaki/cari preservation (snapshot field-set)
 // ---------------------------------------------------------------------------
 //
-// Pada kode F, struct `Pendaki` memiliki field:
-//   id, nama_pendaki, id_perangkat, telepon_darurat, tanggal_naik, status
-// Snapshot ini SHALL CONTINUE TO sama setelah fix.
+// Pada kode F (post-feedback), struct `Pendaki` memiliki field:
+//   id, nama_pendaki, id_perangkat, telepon_darurat, tanggal_naik,
+//   status, tanggal_turun
+// `tanggal_turun` ditambahkan supaya operator basecamp bisa lihat
+// waktu turun di tabel riwayat & export Excel. Field-set baru ini
+// SHALL CONTINUE TO konsisten ke depan.
 
-/// Validates: Requirements 3.6
+/// Validates: Requirements 3.6 (extended)
 ///
 /// Pendaki yang dikembalikan oleh /api/pendaki/cari SHALL CONTINUE TO
-/// memiliki field-set yang sama dengan baseline.
+/// memiliki field-set yang sama dengan kontrak post-feedback.
 #[test]
 fn pres_pendaki_serialization_field_set_snapshot() {
     let p = Pendaki {
@@ -339,6 +347,7 @@ fn pres_pendaki_serialization_field_set_snapshot() {
         telepon_darurat: "081234567890".to_string(),
         tanggal_naik: "2026-01-01T08:00:00".to_string(),
         status: "Mendaki".to_string(),
+        tanggal_turun: None,
     };
 
     let json = serde_json::to_value(&p).expect("Pendaki SHALL serializable");
@@ -353,12 +362,13 @@ fn pres_pendaki_serialization_field_set_snapshot() {
         "nama_pendaki",
         "status",
         "tanggal_naik",
+        "tanggal_turun",
         "telepon_darurat",
     ];
 
     assert_eq!(
         keys, expected,
-        "Field-set Pendaki SHALL CONTINUE TO sama dengan baseline. \
+        "Field-set Pendaki SHALL CONTINUE TO sama dengan kontrak post-feedback. \
          Actual={:?}, expected={:?}",
         keys, expected
     );
@@ -373,11 +383,12 @@ proptest! {
         ..ProptestConfig::default()
     })]
 
-    /// Validates: Requirements 3.6
+    /// Validates: Requirements 3.6 (extended)
     ///
     /// Untuk pendaki dengan nama valid, struktur respons Pendaki
     /// SHALL tetap berisi field-set yang sama (id, nama_pendaki,
-    /// id_perangkat, telepon_darurat, tanggal_naik, status).
+    /// id_perangkat, telepon_darurat, tanggal_naik, status,
+    /// tanggal_turun).
     #[test]
     fn pres_pendaki_field_set_invariant_under_all_names(
         nama in "[A-Za-z ]{1,40}",
@@ -392,6 +403,7 @@ proptest! {
             telepon_darurat: telp,
             tanggal_naik: "2026-01-01T08:00:00".to_string(),
             status: "Mendaki".to_string(),
+            tanggal_turun: None,
         };
         let json = serde_json::to_value(&p).unwrap();
         let obj = json.as_object().unwrap();
@@ -403,6 +415,7 @@ proptest! {
             "nama_pendaki",
             "status",
             "tanggal_naik",
+            "tanggal_turun",
             "telepon_darurat",
         ];
         prop_assert_eq!(keys, expected);

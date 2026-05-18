@@ -335,10 +335,14 @@ async fn ambil_history_pendaki(
 // Default-nya `None` (pendaki masih `Mendaki`); diisi saat
 // `selesaikan_pendakian` dipanggil.
 //
-// Field di-`#[serde(skip)]`-kan agar JSON output endpoint
-// `/api/pendaki`, `/api/pendaki/riwayat`, dan `/api/pendaki/cari` TETAP
-// memiliki field-set yang sama persis dengan baseline (preserve clause
-// 3.6). Field tetap dapat di-load via `FromRow` (sqlx tidak melihat
+// User feedback (post-deploy): operator basecamp butuh visibility
+// `tanggal_turun` di tabel riwayat & export Excel untuk audit waktu
+// turun pendaki yang sudah selesai. Sebelumnya field ini di-skip dari
+// JSON response — sekarang kita expose. `Option<NaiveDateTime>` akan
+// di-serialize sebagai `null` saat pendaki masih mendaki, dan
+// timestamp ISO-8601 saat sudah turun.
+//
+// Field tetap dapat di-load via `FromRow` (sqlx tidak melihat
 // atribut serde), sehingga query `SELECT * FROM pendaki ...` tetap
 // bekerja setelah migrasi `ADD COLUMN IF NOT EXISTS tanggal_turun`.
 #[derive(Serialize, FromRow)]
@@ -350,12 +354,11 @@ struct Pendaki {
     tanggal_naik: chrono::NaiveDateTime,
     status: String,
     /// Set saat status diubah ke 'Sudah Turun' (lihat
-    /// `selesaikan_pendakian`). Untuk pendaki aktif, field ini `None`.
-    /// Dipakai endpoint `/api/pendaki/{id}/history` untuk men-cap
-    /// window pencarian koordinat. `serde(skip)` agar tidak ikut
-    /// di-serialize ke client (preserve baseline 3.6).
-    #[serde(skip)]
-    #[allow(dead_code)]
+    /// `selesaikan_pendakian`). Untuk pendaki aktif, field ini `None`
+    /// (di-serialize sebagai JSON `null`). Dipakai endpoint
+    /// `/api/pendaki/{id}/history` untuk men-cap window pencarian
+    /// koordinat, DAN sekarang juga di-render di tabel riwayat +
+    /// Export Excel untuk operator basecamp.
     tanggal_turun: Option<chrono::NaiveDateTime>,
 }
 

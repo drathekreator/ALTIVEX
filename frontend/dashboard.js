@@ -575,6 +575,11 @@ function renderHistoryTable(data) {
         const actionBtns = (p.status === 'Mendaki')
             ? `<button class="neo-btn neo-btn-sm neo-btn-blue" data-action="finish" data-id-perangkat="${idPerangkatAttr}">${ICON('checkSimple', 14)} Selesai</button>`
             : `<button class="neo-btn neo-btn-sm neo-btn-red" data-action="delete" data-id="${idAttr}">${ICON('trash', 14)}</button>`;
+        // tanggal_turun NULL untuk pendaki masih mendaki — tampil
+        // dash supaya tidak misleading vs "00:00 / Invalid Date".
+        const turunDisplay = p.tanggal_turun
+            ? new Date(p.tanggal_turun).toLocaleString('id-ID')
+            : "—";
         // `data-label` dipakai oleh CSS `@media (max-width: 600px)` untuk
         // me-render label inline saat tabel di-card-ify (tiap row jadi
         // kartu vertikal, label di kiri, value di kanan).
@@ -587,6 +592,7 @@ function renderHistoryTable(data) {
                     <span class="neo-badge ${statusBadgeCls}">${escapeHtml(p.status)}</span>
                 </td>
                 <td data-label="Waktu Naik" class="hide-mobile">${escapeHtml(new Date(p.tanggal_naik).toLocaleString('id-ID'))}</td>
+                <td data-label="Waktu Turun" class="hide-mobile">${escapeHtml(turunDisplay)}</td>
                 <td data-label="Aksi" class="cell-actions">
                     <div class="history-actions">
                         ${actionBtns}
@@ -701,19 +707,40 @@ async function exportExcel() {
 
     // Map data → array of objects dengan kolom human-readable Bahasa
     // Indonesia. Date di-format dd/MM/yyyy HH:mm supaya Excel id-ID
-    // bisa parse otomatis tanpa bingung locale.
+    // bisa parse otomatis tanpa bingung locale. Durasi pendakian
+    // dihitung dari (tanggal_turun || now) - tanggal_naik dan
+    // diformat sebagai "Xh Ymnt" untuk operator basecamp.
+    const fmtDate = (iso) => iso
+        ? new Date(iso).toLocaleString("id-ID", {
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit",
+        })
+        : "—";
+    const calcDuration = (naikIso, turunIso) => {
+        if (!naikIso) return "—";
+        const naik = new Date(naikIso);
+        const turun = turunIso ? new Date(turunIso) : new Date();
+        const diffMs = turun - naik;
+        if (!Number.isFinite(diffMs) || diffMs < 0) return "—";
+        const totalMin = Math.floor(diffMs / 60000);
+        const days = Math.floor(totalMin / 1440);
+        const hours = Math.floor((totalMin % 1440) / 60);
+        const mins = totalMin % 60;
+        const parts = [];
+        if (days > 0) parts.push(`${days}h`);
+        if (hours > 0) parts.push(`${hours}j`);
+        if (mins > 0 || parts.length === 0) parts.push(`${mins}mnt`);
+        return parts.join(" ");
+    };
     const rows = historyData.map((p, i) => ({
         "No": i + 1,
         "Nama Pendaki": p.nama_pendaki ?? "",
         "ID Perangkat": p.id_perangkat ?? "",
         "Telepon Darurat": p.telepon_darurat ?? "",
         "Status": p.status ?? "",
-        "Waktu Naik": p.tanggal_naik
-            ? new Date(p.tanggal_naik).toLocaleString("id-ID", {
-                day: "2-digit", month: "2-digit", year: "numeric",
-                hour: "2-digit", minute: "2-digit",
-            })
-            : "",
+        "Waktu Naik": fmtDate(p.tanggal_naik),
+        "Waktu Turun": fmtDate(p.tanggal_turun),
+        "Durasi Pendakian": calcDuration(p.tanggal_naik, p.tanggal_turun),
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -1026,6 +1053,31 @@ async function viewJourneyDetail(p) {
     document.getElementById('detail-nama').innerText = p.nama_pendaki;
     document.getElementById('stat-start').innerText  = new Date(p.tanggal_naik).toLocaleString('id-ID');
     document.getElementById('stat-status').innerText = p.status;
+
+    // Tampilkan waktu selesai (kalau sudah turun) + durasi pendakian.
+    // Pendaki masih `Mendaki` → durasi dihitung sampai sekarang
+    // (rolling), waktu selesai diberi label "—".
+    const endEl = document.getElementById('stat-end');
+    const durEl = document.getElementById('stat-duration');
+    if (endEl) {
+        endEl.innerText = p.tanggal_turun
+            ? new Date(p.tanggal_turun).toLocaleString('id-ID')
+            : "—";
+    }
+    if (durEl) {
+        const naik = new Date(p.tanggal_naik);
+        const turun = p.tanggal_turun ? new Date(p.tanggal_turun) : new Date();
+        const totalMin = Math.max(0, Math.floor((turun - naik) / 60000));
+        const days = Math.floor(totalMin / 1440);
+        const hours = Math.floor((totalMin % 1440) / 60);
+        const mins = totalMin % 60;
+        const parts = [];
+        if (days > 0) parts.push(`${days}h`);
+        if (hours > 0) parts.push(`${hours}j`);
+        if (mins > 0 || parts.length === 0) parts.push(`${mins}mnt`);
+        durEl.innerText = parts.join(" ");
+    }
+
     document.getElementById('modal-detail').style.display = 'flex';
 
     if (!miniMap) {
