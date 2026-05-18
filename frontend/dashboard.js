@@ -833,16 +833,69 @@ function filterHistory()   { applyFilters(); }
 
 // ====================================================================
 // WS & STATUS
+// --------------------------------------------------------------------
+// Visibility WS untuk operator + fallback polling cepat saat WS down.
+// `wsHealthy` = true setelah `onopen`; false saat `onerror`/`onclose`.
+// Polling `/api/sensor/latest` di-jalankan tiap `LIVE_POLL_FAST_MS`
+// saat WS down, dan `LIVE_POLL_SLOW_MS` saat WS hidup (mengurangi
+// beban backend ketika WS sudah cover real-time).
+// --------------------------------------------------------------------
+// Reverse proxy (nginx) WAJIB punya konfigurasi WS upgrade pada
+// location /ws — lihat `deployment/Caddyfile` untuk Caddy, atau
+// snippet nginx di README. Tanpa konfigurasi upgrade, browser
+// dapat 200/502 dan onopen tidak pernah terpanggil.
 // ====================================================================
+const LIVE_POLL_FAST_MS = 5000;   // saat WS down, polling agresif
+const LIVE_POLL_SLOW_MS = 30000;  // saat WS hidup, polling untuk safety net
+let wsHealthy = false;
+let livePollTimer = null;
+let wsReconnectAttempts = 0;
+
+function schedulePolling() {
+    if (livePollTimer) clearInterval(livePollTimer);
+    const interval = wsHealthy ? LIVE_POLL_SLOW_MS : LIVE_POLL_FAST_MS;
+    livePollTimer = setInterval(fetchInitialSensorData, interval);
+    console.log(`[ALTIVEX] Polling /api/sensor/latest tiap ${interval}ms (WS healthy=${wsHealthy})`);
+}
+
 function connectWebSocket() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        latestDataPerDevice[data.id_perangkat] = data;
-        renderHikerCards();
+    const url = `${protocol}//${window.location.host}/ws`;
+    console.log(`[ALTIVEX] WS connecting → ${url}`);
+    const ws = new WebSocket(url);
+
+    ws.onopen = () => {
+        wsHealthy = true;
+        wsReconnectAttempts = 0;
+        console.log("[ALTIVEX] WS OPEN — real-time aktif");
+        // Saat baru connect, fetch sekali snapshot terbaru supaya
+        // sidebar tidak kosong selama menunggu publish berikutnya.
+        fetchInitialSensorData();
+        schedulePolling();
     };
-    ws.onclose = () => setTimeout(connectWebSocket, 3000);
+
+    ws.onmessage = (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            latestDataPerDevice[data.id_perangkat] = data;
+            renderHikerCards();
+        } catch (err) {
+            console.warn("[ALTIVEX] WS payload tidak valid:", err);
+        }
+    };
+
+    ws.onerror = (ev) => {
+        console.warn("[ALTIVEX] WS ERROR — kemungkinan reverse proxy belum support upgrade", ev);
+    };
+
+    ws.onclose = (ev) => {
+        wsHealthy = false;
+        wsReconnectAttempts += 1;
+        const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts - 1), 15000);
+        console.log(`[ALTIVEX] WS CLOSE (code=${ev.code}). Reconnect dalam ${delay}ms (attempt #${wsReconnectAttempts})`);
+        schedulePolling();
+        setTimeout(connectWebSocket, delay);
+    };
 }
 
 async function checkStatuses() {
@@ -884,7 +937,9 @@ async function fetchInitialSensorData() {
 // INIT
 // ====================================================================
 setInterval(checkStatuses, 5000);
-setInterval(fetchInitialSensorData, 30000);
+// Polling /api/sensor/latest di-handle oleh `schedulePolling()` lewat
+// `connectWebSocket()` (interval menyesuaikan kondisi WS). Polling
+// pendaki tetap konstan di interval lama.
 setInterval(fetchPendakiAktif, 10000);
 
 checkStatuses();

@@ -753,6 +753,15 @@ async fn start_mqtt_client(
 
                     let payload = publish.payload;
                     if let Ok(data) = serde_json::from_slice::<IncomingData>(&payload) {
+                        // Visibility log — sengaja ringkas (tanpa payload
+                        // utuh) supaya tidak men-spam log saat publish
+                        // tinggi. Operator butuh kepastian "publish masuk"
+                        // ke backend sebelum ngecek DB.
+                        println!(
+                            "📥 MQTT publish diterima: id={} lat={} lon={}",
+                            data.id_perangkat, data.latitude, data.longitude
+                        );
+
                         // Task 3.3 — guard koordinat tetap berlaku.
                         if !valid_coord(&data) {
                             println!(
@@ -765,7 +774,7 @@ async fn start_mqtt_client(
                         // Idempotent insert (B10) — broker bisa retransmit
                         // pesan yang sama, kita absorb via UNIQUE INDEX
                         // `log_sensor_dedupe_idx (id_perangkat, timestamp)`.
-                        let _ = sqlx::query(
+                        let insert_res = sqlx::query(
                             "INSERT INTO log_sensor (id_perangkat, latitude, longitude) \
                              VALUES ($1, $2, $3) \
                              ON CONFLICT DO NOTHING",
@@ -776,10 +785,48 @@ async fn start_mqtt_client(
                         .execute(&pool)
                         .await;
 
+                        match insert_res {
+                            Ok(r) => {
+                                if r.rows_affected() == 0 {
+                                    println!(
+                                        "↩️  Dedupe (ON CONFLICT DO NOTHING) — id={} sudah ada di window timestamp.",
+                                        data.id_perangkat
+                                    );
+                                } else {
+                                    println!(
+                                        "💾 Insert OK ke log_sensor: id={} ({} row).",
+                                        data.id_perangkat,
+                                        r.rows_affected()
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                println!(
+                                    "❌ Gagal INSERT log_sensor untuk id={}: {}",
+                                    data.id_perangkat, e
+                                );
+                            }
+                        }
+
                         // Broadcast ke WebSocket
                         if let Ok(json_str) = serde_json::to_string(&data) {
-                            let _ = tx.send(json_str);
+                            match tx.send(json_str) {
+                                Ok(n) => println!("📣 WS broadcast → {} subscriber.", n),
+                                Err(_) => println!("ℹ️  WS belum ada subscriber (skip broadcast)."),
+                            }
                         }
+                    } else {
+                        // Payload bukan IncomingData JSON valid (mis. ESP32
+                        // kirim non-JSON / format salah). Print sample byte
+                        // pertama untuk debug — bukan seluruh payload.
+                        let sample: String = String::from_utf8_lossy(&payload)
+                            .chars()
+                            .take(80)
+                            .collect();
+                        println!(
+                            "⚠️  Payload MQTT tidak bisa di-deserialize ke IncomingData. Sample: {:?}",
+                            sample
+                        );
                     }
                 }
                 Ok(Event::Incoming(Packet::ConnAck(_))) => {
