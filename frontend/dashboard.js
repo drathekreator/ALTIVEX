@@ -671,25 +671,113 @@ async function submitEdit() {
 }
 
 function exportCSV() {
-    if (historyData.length === 0) return showToast("Tidak ada data untuk dieksport", "error");
+    return exportExcel();
+}
 
-    const headers = ["Nama", "ID Alat", "Telepon", "Status", "Waktu Naik"];
-    const rows = historyData.map(p => [
-        p.nama_pendaki, p.id_perangkat, p.telepon_darurat, p.status, p.tanggal_naik
-    ].map(csvField).join(","));
+/**
+ * Export riwayat pendakian ke .xlsx (Excel native).
+ * Lebih ramah penjaga daripada CSV: kolom auto-width, header bold +
+ * background warna, freeze row pertama, format tanggal proper.
+ *
+ * SheetJS (~600KB) di-lazy-load via CDN saat pertama kali dipanggil
+ * supaya tidak men-bloat initial page load. Subsequent click instant
+ * karena script sudah ter-cache browser.
+ */
+async function exportExcel() {
+    if (historyData.length === 0) {
+        return showToast("Tidak ada data untuk diekspor", "error");
+    }
 
-    const body = headers.join(",") + "\r\n" + rows.join("\r\n") + "\r\n";
-    const bom = "\uFEFF";
-    const blob = new Blob([bom + body], { type: "text/csv;charset=utf-8;" });
+    // Lazy-load SheetJS dari CDN. unpkg + integrity supaya CSP-aman.
+    if (typeof XLSX === "undefined") {
+        showToast("Memuat modul export...", "info");
+        try {
+            await loadScriptOnce("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        } catch (e) {
+            showToast("Gagal memuat modul export. Cek koneksi internet.", "error");
+            return;
+        }
+    }
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `riwayat_altivex_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    // Map data → array of objects dengan kolom human-readable Bahasa
+    // Indonesia. Date di-format dd/MM/yyyy HH:mm supaya Excel id-ID
+    // bisa parse otomatis tanpa bingung locale.
+    const rows = historyData.map((p, i) => ({
+        "No": i + 1,
+        "Nama Pendaki": p.nama_pendaki ?? "",
+        "ID Perangkat": p.id_perangkat ?? "",
+        "Telepon Darurat": p.telepon_darurat ?? "",
+        "Status": p.status ?? "",
+        "Waktu Naik": p.tanggal_naik
+            ? new Date(p.tanggal_naik).toLocaleString("id-ID", {
+                day: "2-digit", month: "2-digit", year: "numeric",
+                hour: "2-digit", minute: "2-digit",
+            })
+            : "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Auto-fit kolom — hitung max length per kolom (header + data),
+    // tambah padding 2 untuk breathing room.
+    const headers = Object.keys(rows[0] || {});
+    const colWidths = headers.map(h => {
+        const maxLen = Math.max(
+            h.length,
+            ...rows.map(r => String(r[h] ?? "").length)
+        );
+        return { wch: Math.min(maxLen + 2, 40) };  // cap at 40 chars
+    });
+    ws["!cols"] = colWidths;
+
+    // Freeze row pertama (header) supaya scroll tidak hilang konteks.
+    ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+    // SheetJS Community pakai `!freeze` di workbook.Workbook? Tapi
+    // safer pakai pane langsung. Tambahkan juga via `!ref` rangeguard.
+    ws["!autofilter"] = { ref: ws["!ref"] };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Riwayat Pendakian");
+
+    // Workbook metadata — judul + author = ALTIVEX biar terlihat
+    // profesional saat penjaga buka di Excel.
+    wb.Props = {
+        Title: "Riwayat Pendakian ALTIVEX",
+        Author: "ALTIVEX Basecamp",
+        CreatedDate: new Date(),
+    };
+
+    const filename = `riwayat_altivex_${new Date().toISOString().split("T")[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+
+    showToast("File Excel berhasil diunduh", "success");
+}
+
+/**
+ * Lazy-load script eksternal sekali. Idempotent: panggilan ke-2 untuk
+ * URL yang sama langsung resolve tanpa fetch ulang. Reject hanya saat
+ * network error / 404.
+ */
+function loadScriptOnce(url) {
+    return new Promise((resolve, reject) => {
+        // Cek apakah script sudah ada di DOM.
+        const existing = document.querySelector(`script[src="${url}"]`);
+        if (existing) {
+            if (existing.dataset.loaded === "1") return resolve();
+            existing.addEventListener("load", () => resolve());
+            existing.addEventListener("error", () => reject(new Error("script error")));
+            return;
+        }
+        const s = document.createElement("script");
+        s.src = url;
+        s.async = true;
+        s.addEventListener("load", () => {
+            s.dataset.loaded = "1";
+            resolve();
+        });
+        s.addEventListener("error", () => reject(new Error("network error")));
+        document.head.appendChild(s);
+    });
 }
 
 async function selesaikanPendakian(idAlat) {
