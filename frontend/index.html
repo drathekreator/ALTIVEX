@@ -32,11 +32,15 @@
 
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+        <!-- Icon library — di-load SEBELUM dashboard.js supaya helper
+             ICON()/iconNode() sudah tersedia saat init. -->
+        <script src="icons.js"></script>
     </head>
     <body>
         <header>
             <div class="logo">
-                <span>⛰️</span> ALTIVEX
+                <span class="logo__icon" id="logo-icon"></span>
+                <span class="logo__name">ALTIVEX</span>
             </div>
             <div class="header-status-group">
                 <div id="basecamp-status" class="neo-badge badge-white">
@@ -53,19 +57,19 @@
                     class="theme-toggle"
                     aria-label="Aktifkan dark mode"
                     aria-pressed="false"
-                    title="Toggle theme">🌙</button>
+                    title="Toggle theme"></button>
                 <button
                     id="logout-btn"
                     type="button"
                     class="theme-toggle logout-btn"
                     aria-label="Logout"
-                    title="Keluar">↪</button>
+                    title="Keluar"></button>
             </div>
         </header>
 
         <nav class="tabs-nav">
-            <button class="tab-link active" onclick="openTab('tab-live', this)">📡 Peta Live</button>
-            <button class="tab-link" onclick="openTab('tab-pendaki', this)">👥 Kelola Pendaki</button>
+            <button class="tab-link active" data-tab="tab-live"><span class="tab-link__icon" data-icon="broadcast"></span> Peta Live</button>
+            <button class="tab-link" data-tab="tab-pendaki"><span class="tab-link__icon" data-icon="users"></span> Kelola Pendaki</button>
         </nav>
 
         <!-- TAB 1: PETA LIVE -->
@@ -75,7 +79,7 @@
                  `updateAlertBanner(outsideCount)` saat ≥1 pendaki keluar
                  buffer. Klik banner → scroll ke kartu alert pertama. -->
             <div id="map-alert-banner" class="map-alert-banner" hidden role="button" tabindex="0" aria-label="Lihat pendaki keluar koridor">
-                <span class="map-alert-banner__icon">⚠️</span>
+                <span class="map-alert-banner__icon" data-icon="warning"></span>
                 <span id="map-alert-banner-text" class="map-alert-banner__text">0 pendaki di luar koridor</span>
                 <button type="button" class="map-alert-banner__cta">Lihat</button>
             </div>
@@ -86,10 +90,10 @@
                 </section>
 
                 <aside class="sidebar">
-                    <h2 class="section-title">⚠️ Alert Sidebar</h2>
+                    <h2 class="section-title"><span data-icon="warning"></span> Alert Sidebar</h2>
                     <div id="hiker_list"></div>
 
-                    <h2 class="section-title--mt">📡 Perangkat</h2>
+                    <h2 class="section-title--mt"><span data-icon="broadcast"></span> Perangkat</h2>
                     <div id="available_list"></div>
                 </aside>
             </div>
@@ -100,8 +104,8 @@
             <div class="neo-card toolbar">
                 <h2 class="toolbar__title">Daftar Riwayat Pendakian</h2>
                 <div class="toolbar__actions">
-                    <button class="neo-btn neo-btn-green" onclick="exportCSV()">📥 Export CSV</button>
-                    <button class="neo-btn" onclick="openModal()">➕ Daftarkan Pendaki</button>
+                    <button class="neo-btn neo-btn-green" data-action="exportCSV"><span data-icon="download"></span> Export CSV</button>
+                    <button class="neo-btn" data-action="openModal"><span data-icon="plus"></span> Daftarkan Pendaki</button>
                 </div>
             </div>
 
@@ -155,7 +159,7 @@
                 </div>
 
                 <div class="modal-form-actions">
-                    <button id="btn-simpan" class="neo-btn neo-btn-green btn-flex">✔️ SIMPAN DATA</button>
+                    <button id="btn-simpan" class="neo-btn neo-btn-green btn-flex"><span data-icon="checkSimple"></span> SIMPAN DATA</button>
                     <button class="neo-btn neo-btn-red" onclick="closeModal()">BATAL</button>
                 </div>
             </div>
@@ -190,7 +194,7 @@
 
         <!-- NOTIFICATION REQUEST PROMPT -->
         <div id="notif-request" class="notification-request">
-            <p class="notif-prompt-text">🔔 Aktifkan notifikasi browser untuk peringatan keluar jalur?</p>
+            <p class="notif-prompt-text"><span data-icon="bell"></span> Aktifkan notifikasi browser untuk peringatan keluar jalur?</p>
             <div class="notif-prompt-actions">
                 <button class="neo-btn neo-btn-sm neo-btn-green" onclick="requestNotif()">Izinkan</button>
                 <button class="neo-btn neo-btn-sm neo-btn-red" onclick="dismissNotifPrompt()">Nanti</button>
@@ -217,7 +221,7 @@
         <div id="modal-login" class="modal-overlay modal-overlay--auth">
             <div class="modal-content modal-content--auth">
                 <div class="login-brand">
-                    <span class="login-brand__icon">⛰️</span>
+                    <span class="login-brand__icon" data-icon="mountain"></span>
                     <span class="login-brand__name">ALTIVEX</span>
                 </div>
                 <h2 class="modal-title login-heading">Login Basecamp</h2>
@@ -233,7 +237,7 @@
                         <input type="password" id="login-password" name="password" class="neo-input" autocomplete="current-password" required>
                     </div>
                     <p id="login-error" class="login-error" hidden></p>
-                    <button type="submit" class="neo-btn neo-btn-green btn-flex">🔓 MASUK</button>
+                    <button type="submit" class="neo-btn neo-btn-green btn-flex"><span data-icon="unlock"></span> MASUK</button>
                 </form>
             </div>
         </div>

@@ -282,14 +282,10 @@ header {
     z-index: 1000;
 }
 
-.logo {
-    font-weight: 900;
-    font-size: 1.8rem;
-    text-transform: uppercase;
-    letter-spacing: -1px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.logo--legacy-disabled {
+    /* Class lama sudah di-superset di section ICON ALIGNMENT.
+       Kept untuk reference. */
+    display: none;
 }
 
 /* Group status badges di header. */
@@ -789,11 +785,188 @@ body.dark-mode .input-select-white option {
     100% { transform: scale(1);    box-shadow: var(--shadow); }
 }
 
-/* ---------- WAYPOINT ICON (Leaflet divIcon) ---------- */
-.waypoint-icon {
-    font-size: 18px;
-    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
+/* ---------- ICON ALIGNMENT ---------- */
+/* SVG icon dari icons.js. Default: align baseline dengan text di
+   sekelilingnya, ikut color via currentColor (sudah di-set di SVG).
+   `flex-shrink: 0` supaya tidak ke-squish saat container sempit. */
+.icon {
+    display: inline-block;
+    vertical-align: -0.15em;
+    flex-shrink: 0;
+    color: currentColor;
 }
+
+/* Logo header — icon mountain + wordmark "ALTIVEX". */
+.logo {
+    font-weight: 900;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.logo__icon {
+    display: inline-flex;
+    align-items: center;
+    color: var(--ink);
+}
+.logo__icon .icon {
+    /* Logo mountain di-render dengan stroke lebih tebal manual via
+       CSS supaya menonjol di brand position. */
+    stroke-width: 3;
+}
+
+/* Tombol login/logout/theme — icon di-vertical-center. */
+.theme-toggle .icon,
+.neo-btn .icon,
+.tab-link__icon .icon,
+.section-title .icon,
+.section-title--mt .icon,
+.standby-card__name .icon,
+.alert-card__name .icon,
+.all-safe-card .icon,
+.toast .icon,
+.skeleton-card .icon,
+.notif-prompt-text .icon,
+.map-alert-banner__icon .icon,
+.login-brand__icon .icon,
+.history-actions .neo-btn .icon {
+    vertical-align: middle;
+}
+
+/* Section title (Alert Sidebar, Perangkat) — icon ber-margin sedikit. */
+.section-title,
+.section-title--mt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-title .icon { color: var(--red); }
+.section-title--mt .icon { color: var(--blue); }
+
+/* Tab link icon — sedikit lebih kecil + margin kanan. */
+.tab-link__icon {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 6px;
+}
+
+/* Banner icon — putih kontras vs merah, dengan stroke tebal. */
+.map-alert-banner__icon .icon {
+    color: white;
+    stroke-width: 3;
+}
+
+/* Alert card name icon (warning) — putih di tengah card merah. */
+.alert-card__name .icon {
+    color: var(--red);
+    margin-right: 6px;
+}
+
+/* Standby card icon (device) — pakai biru info untuk membedakan dari
+   alert. */
+.standby-card__name .icon {
+    color: var(--blue);
+    margin-right: 6px;
+}
+
+/* All-safe card icon — hijau. */
+.all-safe-card .icon {
+    color: var(--ink);
+    margin-right: 8px;
+    stroke-width: 3;
+}
+
+/* Toast icon — sesuai varian. */
+.toast--success .icon { color: var(--green); }
+.toast--error   .icon { color: var(--red); }
+.toast--info    .icon { color: var(--blue); }
+
+/* Skeleton card icon — animated rotating refresh. */
+.skeleton-card .icon {
+    color: var(--muted);
+    animation: skeleton-spin 2s linear infinite;
+}
+@keyframes skeleton-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Login brand icon — ukuran besar, color primary. */
+.login-brand__icon {
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+}
+.login-brand__icon .icon {
+    width: 32px;
+    height: 32px;
+    stroke-width: 3;
+}
+
+/* Logout button icon — diberi rotasi 180deg supaya arah panah masuk. */
+.logout-btn .icon {
+    color: var(--ink);
+}
+
+/* History action buttons — icon agak lebih kecil. */
+.history-actions .neo-btn .icon {
+    margin-right: 2px;
+}
+
+/* ---------- WAYPOINT MARKER (Leaflet divIcon) ---------- */
+.waypoint-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--surface);
+    border: 2.5px solid var(--line);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 0 var(--line);
+    color: var(--ink);
+}
+.waypoint-icon .icon { stroke-width: 2.5; }
+
+/* Path marker (start/end pendaki polyline) */
+.path-marker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--surface);
+    border: 2.5px solid var(--line);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 0 var(--line);
+}
+.path-marker--start .icon { color: var(--green); }
+.path-marker--end   .icon { color: var(--red); }
+
+/* Popup di waypoint — typography pakai font dashboard. */
+.waypoint-popup {
+    font-family: "Manrope", system-ui, sans-serif;
+}
+.waypoint-popup__title {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.waypoint-popup__route {
+    color: white;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid var(--line);
+    display: inline-block;
+    margin-top: 4px;
+}
+
+/* ---------- ICON ALIGNMENT (END) ---------- */
 
 /* ---------- LOGIN PAGE (UI #4) ---------- */
 /* Login modal di-show oleh dashboard.js saat token belum ada di
@@ -910,7 +1083,8 @@ body.dark-mode .input-select-white option {
         gap: 10px;
         padding: 12px 15px;
     }
-    .logo { font-size: 1.4rem; }
+    .logo { font-size: 1.2rem; gap: 8px; }
+    .logo__icon .icon { width: 22px; height: 22px; }
     .tabs-nav { gap: 5px; padding: 10px 15px 0; }
     .tab-link { padding: 8px 12px; font-size: 0.8rem; }
     .tab-content { padding: 15px; }

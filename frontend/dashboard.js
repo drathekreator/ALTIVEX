@@ -91,7 +91,7 @@ async function handleLoginSubmit(ev) {
     }
 
     btn.disabled = true;
-    btn.textContent = "🔄 MEMVERIFIKASI...";
+    btn.textContent = "Memverifikasi...";
 
     try {
         const res = await fetch("/api/login", {
@@ -124,7 +124,7 @@ async function handleLoginSubmit(ev) {
         hideLoginModal();
         // Reset password field (keep username untuk convenience).
         document.getElementById("login-password").value = "";
-        showToast("✅ Login berhasil", "success");
+        showToast("Login berhasil", "success");
         // Trigger reload data setelah login.
         fetchInitialSensorData();
         fetchPendakiAktif();
@@ -133,14 +133,14 @@ async function handleLoginSubmit(ev) {
         err.hidden = false;
     } finally {
         btn.disabled = false;
-        btn.textContent = "🔓 MASUK";
+        btn.innerHTML = ICON('unlock', 18) + ' MASUK';
     }
 }
 
 function logout() {
     clearApiToken();
     showLoginModal();
-    showToast("👋 Logout berhasil", "info");
+    showToast("Logout berhasil", "info");
 }
 
 let __altivexLoginShown = false;
@@ -215,10 +215,23 @@ const routeColors = {
     'Selabintana':   '#AA00FF'
 };
 
-const waypointIcons = {
-    'Trailhead': '🚩', 'Gate': '🚪', 'Pos': '🏠', 'Camp': '⛺',
-    'Summit': '🏔️', 'Junction': '🔀', 'Waypoint': '📍',
-    'Water': '💧', 'default': '📌'
+// ====================================================================
+// MAP — waypoint icon registry (auto-generated SVG via icons.js)
+// --------------------------------------------------------------------
+// Sebelumnya pakai emoji (🚩 🚪 🏠 ⛺ 🏔 dll). Sekarang pakai SVG
+// dari ICON() — currentColor-aware, konsisten dengan dashboard.
+// `waypointIconName` map type Leaflet → key di `ICON_PATHS` (icons.js).
+// ====================================================================
+const waypointIconName = {
+    'Trailhead': 'flag',
+    'Gate':      'gate',
+    'Pos':       'home',
+    'Camp':      'tent',
+    'Summit':    'summit',
+    'Junction':  'junction',
+    'Waypoint':  'pin',
+    'Water':     'water',
+    'default':   'pin',
 };
 
 // ====================================================================
@@ -269,23 +282,24 @@ async function initGeoData() {
         waypointFeatures.forEach(wp => {
             const [lng, lat] = wp.geometry.coordinates;
             const props = wp.properties;
-            const icon = waypointIcons[props.type] || waypointIcons['default'];
+            const iconName = waypointIconName[props.type] || waypointIconName.default;
+            const iconSvg = ICON(iconName, 22, 'waypoint-svg');
             const routeColor = routeColors[props.route] || '#333';
 
             const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
-                    html: `<span class="waypoint-icon">${icon}</span>`,
+                    html: `<span class="waypoint-icon">${iconSvg}</span>`,
                     className: '',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
                 })
             }).addTo(map);
 
             const elev = props.elevation_m ? `${props.elevation_m} mdpl` : '-';
             marker.bindPopup(
-                `<div style="font-family:Outfit,sans-serif;">` +
-                `<b style="font-size:14px;">${icon} ${escapeHtml(props.name)}</b><br>` +
-                `<span style="background:${routeColor}; color:white; padding:2px 8px; font-size:11px; font-weight:700; border:2px solid #000;">` +
+                `<div class="waypoint-popup">` +
+                `<b class="waypoint-popup__title">${ICON(iconName, 16)} ${escapeHtml(props.name)}</b><br>` +
+                `<span class="waypoint-popup__route" style="background:${routeColor};">` +
                 `${escapeHtml(props.route)}</span><br>` +
                 `<small>Tipe: ${escapeHtml(props.type)} | Elevasi: ${escapeHtml(elev)}</small></div>`
             );
@@ -347,7 +361,10 @@ function applyTheme(theme) {
     document.body.classList.toggle("dark-mode", isDark);
     const btn = document.getElementById("theme-toggle");
     if (btn) {
-        btn.textContent = isDark ? "☀" : "🌙";
+        // Pakai SVG icon dari ICON_PATHS (icons.js). Saat dark mode,
+        // tampilkan ikon matahari (clue: klik untuk balik ke light);
+        // saat light mode, tampilkan bulan.
+        btn.innerHTML = isDark ? ICON('sun', 18) : ICON('moon', 18);
         btn.setAttribute("aria-label", isDark ? "Aktifkan light mode" : "Aktifkan dark mode");
         btn.setAttribute("aria-pressed", String(isDark));
     }
@@ -441,10 +458,13 @@ function showToast(msg, type) {
               :                       'toast--info';
     toast.className = `toast ${cls}`;
     // `msg` di-render via textContent (DOM API aman) — kita tetap pakai
-    // wrapper innerHTML untuk emoji, dan teks lewat textContent supaya
+    // wrapper innerHTML untuk icon, dan teks lewat textContent supaya
     // string apa pun (mis. dari error message backend) tidak ter-parse
     // sebagai HTML.
-    toast.innerHTML = '<span>🔔</span> ';
+    const iconName = type === 'success' ? 'check'
+                   : type === 'error'   ? 'warning'
+                   :                      'bell';
+    toast.innerHTML = ICON(iconName, 18) + ' ';
     const span = document.createElement('span');
     span.textContent = msg;
     toast.appendChild(span);
@@ -553,8 +573,8 @@ function renderHistoryTable(data) {
         const idPerangkatAttr = escapeHtml(String(p.id_perangkat ?? ""));
         const statusBadgeCls = p.status === 'Mendaki' ? 'badge-status-on' : 'badge-status-off';
         const actionBtns = (p.status === 'Mendaki')
-            ? `<button class="neo-btn neo-btn-sm neo-btn-blue" data-action="finish" data-id-perangkat="${idPerangkatAttr}">✅ Selesai</button>`
-            : `<button class="neo-btn neo-btn-sm neo-btn-red" data-action="delete" data-id="${idAttr}">🗑️</button>`;
+            ? `<button class="neo-btn neo-btn-sm neo-btn-blue" data-action="finish" data-id-perangkat="${idPerangkatAttr}">${ICON('checkSimple', 14)} Selesai</button>`
+            : `<button class="neo-btn neo-btn-sm neo-btn-red" data-action="delete" data-id="${idAttr}">${ICON('trash', 14)}</button>`;
         // `data-label` dipakai oleh CSS `@media (max-width: 600px)` untuk
         // me-render label inline saat tabel di-card-ify (tiap row jadi
         // kartu vertikal, label di kiri, value di kanan).
@@ -570,8 +590,8 @@ function renderHistoryTable(data) {
                 <td data-label="Aksi" class="cell-actions">
                     <div class="history-actions">
                         ${actionBtns}
-                        <button class="neo-btn neo-btn-sm" data-action="edit" data-id="${idAttr}">✏️</button>
-                        <button class="neo-btn neo-btn-sm neo-btn-green" data-action="view" data-id="${idAttr}">🗺️</button>
+                        <button class="neo-btn neo-btn-sm" data-action="edit" data-id="${idAttr}">${ICON('edit', 14)}</button>
+                        <button class="neo-btn neo-btn-sm neo-btn-green" data-action="view" data-id="${idAttr}">${ICON('map', 14)}</button>
                     </div>
                 </td>
             </tr>
@@ -611,9 +631,9 @@ async function deletePendaki(id) {
     showConfirm("HAPUS DATA", "Hapus permanen data pendaki ini dari riwayat?", async () => {
         try {
             const res = await apiFetch(`/api/pendaki/${id}`, { method: "DELETE" });
-            if (res.ok)                    { showToast("✅ Data dihapus", "success"); fetchHistory(); }
-            else if (res.status === 404)   { showToast("❌ Pendaki tidak ditemukan", "error"); }
-            else                           { showToast("❌ Gagal menghapus", "error"); }
+            if (res.ok)                    { showToast("Data dihapus", "success"); fetchHistory(); }
+            else if (res.status === 404)   { showToast("Pendaki tidak ditemukan", "error"); }
+            else                           { showToast("Gagal menghapus", "error"); }
         } catch (e) { showToast("Gagal menghapus", "error"); }
     });
 }
@@ -644,9 +664,9 @@ async function submitEdit() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nama_pendaki: nama, id_perangkat: idAlat, telepon_darurat: telp })
         });
-        if (res.ok)                  { showToast("✅ Perubahan Disimpan!", "success"); closeModal(); fetchPendakiAktif(); fetchHistory(); }
-        else if (res.status === 404) { showToast("❌ Pendaki tidak ditemukan", "error"); }
-        else                         { showToast("❌ Gagal menyimpan", "error"); }
+        if (res.ok)                  { showToast("Perubahan disimpan", "success"); closeModal(); fetchPendakiAktif(); fetchHistory(); }
+        else if (res.status === 404) { showToast("Pendaki tidak ditemukan", "error"); }
+        else                         { showToast("Gagal menyimpan", "error"); }
     } catch (e) { showToast("Gagal menyimpan", "error"); }
 }
 
@@ -676,10 +696,10 @@ async function selesaikanPendakian(idAlat) {
     showConfirm("KONFIRMASI TURUN", `Apakah pendaki dengan alat ${idAlat} sudah benar-benar kembali ke basecamp?`, async () => {
         try {
             const res = await apiFetch(`/api/pendaki/${idAlat}/selesai`, { method: "PUT" });
-            if (res.ok)                  { showToast("✅ Pendakian diselesaikan", "success"); fetchPendakiAktif(); fetchHistory(); fetchInitialSensorData(); }
-            else if (res.status === 404) { showToast("❌ Pendaki tidak ditemukan", "error"); }
-            else                         { showToast("❌ Gagal update status", "error"); }
-        } catch (e) { showToast("❌ Gagal update (Koneksi)", "error"); }
+            if (res.ok)                  { showToast("Pendakian diselesaikan", "success"); fetchPendakiAktif(); fetchHistory(); fetchInitialSensorData(); }
+            else if (res.status === 404) { showToast("Pendaki tidak ditemukan", "error"); }
+            else                         { showToast("Gagal update status", "error"); }
+        } catch (e) { showToast("Gagal update (Koneksi)", "error"); }
     });
 }
 
@@ -802,19 +822,19 @@ function _renderHikerCards() {
             if (!isInside) {
                 outsideCount += 1;
                 if (!isNotified(id)) {
-                    sendNotification("⚠️ PERINGATAN KELUAR JALUR",
+                    sendNotification("⚠ PERINGATAN KELUAR JALUR",
                         `${hiker.nama_pendaki} terpantau keluar dari koridor pendakian!`);
                     setNotified(id, true);
                 }
 
                 alertHTML += `
                     <div class="neo-card alert-card">
-                        <div class="alert-card__name">⚠️ ${escapeHtml(String(hiker.nama_pendaki ?? "").toUpperCase())}</div>
+                        <div class="alert-card__name">${ICON('warning', 18)} ${escapeHtml(String(hiker.nama_pendaki ?? "").toUpperCase())}</div>
                         <div class="alert-card__meta">ID: ${idEsc} | Telp: ${telpEsc}</div>
                         <div class="neo-badge badge-keluar">KELUAR KORIDOR</div>
                         <div class="alert-card__actions">
-                            <button class="neo-btn neo-btn-sm neo-btn-red" data-action="alert" data-id="${idEsc}">🔔 ALERT</button>
-                            <button class="neo-btn neo-btn-sm" data-action="path" data-id="${idEsc}">🗺️ PATH</button>
+                            <button class="neo-btn neo-btn-sm neo-btn-red" data-action="alert" data-id="${idEsc}">${ICON('bell', 14)} ALERT</button>
+                            <button class="neo-btn neo-btn-sm" data-action="path" data-id="${idEsc}">${ICON('map', 14)} PATH</button>
                         </div>
                     </div>
                 `;
@@ -825,9 +845,9 @@ function _renderHikerCards() {
             activeMarkers[id].bindPopup(`<b>PERANGKAT: ${idEsc}</b><br>Belum terdaftar`);
             availHTML += `
                 <div class="neo-card standby-card">
-                    <div class="standby-card__name">🛰️ ${idEsc}</div>
+                    <div class="standby-card__name">${ICON('device', 18)} ${idEsc}</div>
                     <div class="standby-card__meta">Status: Standby (Online)</div>
-                    <button class="neo-btn neo-btn-sm neo-btn-blue" data-action="register" data-id="${idEsc}">📝 DAFTAR</button>
+                    <button class="neo-btn neo-btn-sm neo-btn-blue" data-action="register" data-id="${idEsc}">${ICON('plus', 14)} DAFTAR</button>
                 </div>
             `;
         }
@@ -836,7 +856,7 @@ function _renderHikerCards() {
     const hikerListEl = document.getElementById('hiker_list');
     const availableListEl = document.getElementById('available_list');
     hikerListEl.innerHTML = alertHTML
-        || '<div class="neo-card all-safe-card">✅ SEMUA AMAN</div>';
+        || `<div class="neo-card all-safe-card">${ICON('check', 18)} SEMUA AMAN</div>`;
     availableListEl.innerHTML = availHTML
         || '<p class="empty-message">Tidak ada alat standby.</p>';
 
@@ -903,8 +923,8 @@ async function toggleHistory(id) {
         color: 'var(--blue)', weight: 6, dashArray: '10, 10', opacity: 0.7
     }).addTo(map);
 
-    const startIcon = L.divIcon({ html: '🟢', className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
-    const endIcon   = L.divIcon({ html: '🚩', className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
+    const startIcon = L.divIcon({ html: `<span class="path-marker path-marker--start">${ICON('circleDot', 22)}</span>`, className: '', iconSize: [24, 24], iconAnchor: [12, 12] });
+    const endIcon   = L.divIcon({ html: `<span class="path-marker path-marker--end">${ICON('flag', 22)}</span>`, className: '', iconSize: [24, 24], iconAnchor: [12, 12] });
 
     const startMarker = L.marker(latlngs[0], { icon: startIcon }).addTo(map).bindPopup("Titik Mulai");
     const endMarker   = L.marker(latlngs[latlngs.length - 1], { icon: endIcon }).addTo(map).bindPopup("Posisi Terakhir");
@@ -1081,7 +1101,7 @@ async function fetchInitialSensorData() {
 (function paintInitialSkeleton() {
     const hiker = document.getElementById('hiker_list');
     const avail = document.getElementById('available_list');
-    const skeleton = '<div class="skeleton-card">Memuat data live...</div>';
+    const skeleton = `<div class="skeleton-card">${ICON('refresh', 18)} Memuat data live...</div>`;
     if (hiker && !hiker.innerHTML.trim()) hiker.innerHTML = skeleton;
     if (avail && !avail.innerHTML.trim()) avail.innerHTML = skeleton;
 })();
@@ -1099,26 +1119,56 @@ connectWebSocket();
 
 // Banner alert in-app (Task UI #6) + theme toggle — bind handler sekali.
 document.addEventListener('DOMContentLoaded', () => {
-    const banner = document.getElementById('map-alert-banner');
-    if (banner) {
-        banner.addEventListener('click', focusFirstAlert);
-    }
+    // ----- ICON PAINTING -----
+    // Semua element dengan attribute `data-icon="<name>"` akan di-isi
+    // SVG dari ICON_PATHS. Ini menggantikan pola hardcoded emoji di
+    // markup. Default size 18px; element bisa override pakai
+    // `data-icon-size`.
+    document.querySelectorAll('[data-icon]').forEach(el => {
+        const name = el.getAttribute('data-icon');
+        const size = parseInt(el.getAttribute('data-icon-size') || '18', 10);
+        el.innerHTML = ICON(name, size);
+    });
 
-    // Theme toggle (Modern Warm + dark mode). Re-apply ke tombol agar
-    // icon/aria sesuai keadaan saat DOM sudah siap.
+    // Logo header — render mountain icon ukuran besar.
+    const logoIcon = document.getElementById('logo-icon');
+    if (logoIcon) logoIcon.innerHTML = ICON('mountain', 28);
+
+    // Theme toggle button — icon set sesuai theme aktif (handled
+    // dynamically oleh applyTheme()).
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
         applyTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light');
         themeBtn.addEventListener('click', toggleTheme);
     }
 
+    // Logout button icon.
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.innerHTML = ICON('logout', 18);
+        logoutBtn.addEventListener('click', logout);
+    }
+
+    // Tab navigation — replace inline onclick dengan delegated listener
+    // supaya icon di dalam tombol tidak ke-overwrite.
+    document.querySelectorAll('.tab-link[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => openTab(btn.dataset.tab, btn));
+    });
+
+    // Toolbar buttons (Export CSV, Daftarkan Pendaki) — pakai
+    // data-action karena onclick="exportCSV()" menyentuh isi tombol.
+    document.querySelectorAll('[data-action="exportCSV"]').forEach(b => b.addEventListener('click', exportCSV));
+    document.querySelectorAll('[data-action="openModal"]').forEach(b => b.addEventListener('click', openModal));
+
+    const banner = document.getElementById('map-alert-banner');
+    if (banner) {
+        banner.addEventListener('click', focusFirstAlert);
+    }
+
     // Login form (UI #4). Submit handler + show/hide modal di awal
     // bergantung apakah token sudah tersimpan.
     const loginForm = document.getElementById('login-form');
     if (loginForm) loginForm.addEventListener('submit', handleLoginSubmit);
-
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
     // Initial gate: kalau belum punya token, tampilkan login modal +
     // sembunyikan logout. Sebaliknya, hide modal + show logout.
