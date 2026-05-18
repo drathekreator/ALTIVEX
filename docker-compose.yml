@@ -41,12 +41,17 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: altivex_mosquitto
-    # Port 1883 TIDAK dipublish ke host (Bug B2 — Task 3.7). Container
-    # backend menjangkau lewat `mosquitto:1883` di network internal.
-    # Aktifkan publish hanya jika benar-benar perlu klien eksternal,
-    # dan pastikan TLS aktif sebelumnya.
-    expose:
-      - "1883"
+    # Port 1883 dipublish ke host supaya device ESP32 di lapangan dapat
+    # publish lewat internet (GCP firewall rule `altivex-mqtt` membuka
+    # tcp/1883 untuk tag `mqtt-broker`). Auth tetap WAJIB lewat
+    # `mosquitto/config/passwd` — `allow_anonymous false` di
+    # `mosquitto/config/mosquitto.conf` (Bug B2 / Task 3.7).
+    #
+    # ⚠️ Untuk mode TLS-only (port 8883), terminate TLS di Caddy /
+    # nginx host dan tutup publish 1883 di sini — lihat
+    # `deployment/multi-project-host/README.md` § "MQTTS via Caddy".
+    ports:
+      - "1883:1883"
     # Port 9001 (websocket MQTT) — aktifkan kalau frontend perlu
     # subscribe MQTT langsung. Default-nya off.
     # ports:
