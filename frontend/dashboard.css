@@ -105,10 +105,35 @@ body.dark-mode {
 }
 
 body {
-    font-family: "Outfit", sans-serif;
+    font-family: "Manrope", system-ui, -apple-system, sans-serif;
     background-color: var(--bg);
     color: var(--ink);
     overflow-x: hidden;
+    /* Body weight default lebih ringan supaya display Bricolage di
+       judul terasa kontras + memberi rhythm visual.  */
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display headings & block-marquee text — pakai Bricolage Grotesque.
+   Variable font dengan opsz axis: optical size 12..96 menyesuaikan
+   ukuran sehingga huruf besar tetap punya stress + huruf kecil tetap
+   readable. */
+h1, h2, h3, .logo,
+.modal-title,
+.toolbar__title,
+.section-title,
+.section-title--mt,
+.alert-card__name,
+.standby-card__name,
+.map-alert-banner__text,
+.neo-badge,
+.neo-btn,
+.tab-link {
+    font-family: "Bricolage Grotesque", "Manrope", system-ui, sans-serif;
+    font-weight: 800;
+    font-stretch: 100%;
 }
 
 /* ---------- DARK MODE — explicit color overrides ----------
