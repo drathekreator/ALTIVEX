@@ -718,24 +718,23 @@ async fn start_mqtt_client(
         }
         let (client, mut eventloop) = AsyncClient::new(opts, 10);
 
-        // 2. Subscribe dengan QoS=AtLeastOnce (B10). Broker akan menahan +
-        //    retransmit pesan in-flight saat backend restart.
+        // 2. Subscribe dengan QoS=AtLeastOnce (B10). `client.subscribe()`
+        //    di rumqttc cuma queue request ke local channel — confirmation
+        //    SUBACK datang lewat eventloop.poll() nanti. Jangan pernah
+        //    print "Subscriber aktif" di sini, karena belum terjamin
+        //    broker terima auth + subscribe-nya.
         if let Err(e) = client
             .subscribe("altivex/sensor/data", QoS::AtLeastOnce)
             .await
         {
             println!(
-                "❌ Gagal subscribe MQTT: {:?}. Reconnect dalam {:?}...",
+                "❌ Gagal queue subscribe MQTT: {:?}. Reconnect dalam {:?}...",
                 e, backoff
             );
             tokio::time::sleep(backoff).await;
             backoff = (backoff * 2).min(max_backoff);
             continue;
         }
-
-        println!(
-            "📡 MQTT Subscriber aktif di topic: altivex/sensor/data (QoS=AtLeastOnce)"
-        );
 
         // 3. Inner loop — poll sampai error. `healthy` flag agar kita bisa
         //    drop client + eventloop SETELAH inner loop selesai (lewat
@@ -783,9 +782,21 @@ async fn start_mqtt_client(
                         }
                     }
                 }
+                Ok(Event::Incoming(Packet::ConnAck(_))) => {
+                    // Auth + handshake sukses. Print SEKARANG, bukan
+                    // sebelumnya — pesan ini menjadi indikator nyata
+                    // bahwa broker accept credentials kita.
+                    println!(
+                        "📡 MQTT Subscriber aktif di topic: altivex/sensor/data (QoS=AtLeastOnce)"
+                    );
+                    if !got_first_ok {
+                        backoff = Duration::from_secs(1);
+                        got_first_ok = true;
+                    }
+                }
                 Ok(_) => {
-                    // ConnAck / SubAck / PingResp — broker hidup. Reset
-                    // backoff supaya hiccup berikutnya mulai dari 1s lagi.
+                    // SubAck / PingResp — broker hidup. Reset backoff
+                    // supaya hiccup berikutnya mulai dari 1s lagi.
                     if !got_first_ok {
                         backoff = Duration::from_secs(1);
                         got_first_ok = true;
