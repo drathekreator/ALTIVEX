@@ -50,12 +50,18 @@ use std::time::{Duration, Instant};
 // asersi kita berjalan terhadap shape JSON yang persis sama dengan
 // produksi. Setelah fix di task 3.x dijalankan, struct ini di produksi
 // SHALL tidak berubah (preservation), sehingga test ini tetap lulus.
+//
+// Post-feedback: tambah field `battery: Option<i16>` untuk monitor
+// baterai transmitter. Optional supaya backward-compat dengan firmware
+// lama yang belum kirim battery.
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 struct IncomingData {
     id_perangkat: String,
     latitude: f64,
     longitude: f64,
+    #[serde(default)]
+    battery: Option<i16>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -63,6 +69,15 @@ struct SensorRecord {
     id_perangkat: String,
     latitude: f64,
     longitude: f64,
+    battery: Option<i16>,
+}
+
+/// Replica fungsi sanitize_battery dari main.rs.
+fn sanitize_battery(b: Option<i16>) -> Option<i16> {
+    match b {
+        Some(v) if (0..=100).contains(&v) => Some(v),
+        _ => None,
+    }
 }
 
 /// Replika `Pendaki` (`main.rs`). Field tanggal_naik
@@ -188,6 +203,7 @@ proptest! {
             id_perangkat: id.clone(),
             latitude: lat,
             longitude: lon,
+            battery: None,
         };
 
         let status = mock_terima_data(&mut log_sensor, &mut ws, data.clone());
@@ -286,6 +302,7 @@ proptest! {
                     id_perangkat: id.clone(),
                     latitude: *lat,
                     longitude: *lon,
+                    battery: None,
                 },
                 ts_ms: *ts,
             })
@@ -535,6 +552,7 @@ fn pres_mock_terima_data_happy_example() {
         id_perangkat: "ALAT-001".to_string(),
         latitude: -6.7711,
         longitude: 106.96,
+        battery: None,
     };
     let status = mock_terima_data(&mut db, &mut ws, data.clone());
     assert_eq!(status, 200);
@@ -553,6 +571,7 @@ fn pres_mock_ambil_data_sorts_desc_and_caps_50() {
                 id_perangkat: format!("ALAT-{:03}", i),
                 latitude: 0.1 * (i as f64),
                 longitude: 0.2 * (i as f64),
+                battery: None,
             },
             ts_ms: i,
         });
@@ -562,4 +581,75 @@ fn pres_mock_ambil_data_sorts_desc_and_caps_50() {
     // Terbaru dahulu: id_perangkat untuk i=59 di posisi 0
     assert_eq!(result[0].id_perangkat, "ALAT-059");
     assert_eq!(result[49].id_perangkat, "ALAT-010");
+}
+
+
+// ---------------------------------------------------------------------------
+// Battery monitoring (post-feedback)
+// ---------------------------------------------------------------------------
+//
+// Contract baru:
+//   - Field `battery: Option<i16>` ditambahkan ke IncomingData & SensorRecord.
+//   - sanitize_battery() menormalkan input: hanya 0..=100 yang valid; sisanya
+//     (negatif, >100, atau None) → None.
+//   - Backend HARUS tetap menerima payload dari firmware lama yang TIDAK
+//     mengirim field `battery` (deserialize default = None).
+
+/// Validates: Battery sanitization rules — preservation contract baru.
+#[test]
+fn pres_battery_sanitize_examples() {
+    // Valid range
+    assert_eq!(sanitize_battery(Some(0)), Some(0));
+    assert_eq!(sanitize_battery(Some(50)), Some(50));
+    assert_eq!(sanitize_battery(Some(100)), Some(100));
+
+    // Out-of-range → None (jangan biarkan nilai gila masuk DB)
+    assert_eq!(sanitize_battery(Some(-1)), None);
+    assert_eq!(sanitize_battery(Some(101)), None);
+    assert_eq!(sanitize_battery(Some(i16::MIN)), None);
+    assert_eq!(sanitize_battery(Some(i16::MAX)), None);
+
+    // Missing → None
+    assert_eq!(sanitize_battery(None), None);
+}
+
+/// Validates: Backward-compat dengan firmware lama yang TIDAK kirim battery.
+#[test]
+fn pres_incoming_data_accepts_payload_without_battery() {
+    // Persis payload dari firmware lama: hanya 3 field, tanpa "battery"
+    let json = r#"{"id_perangkat":"ALAT-001","latitude":-6.7711,"longitude":106.96}"#;
+    let parsed: IncomingData = serde_json::from_str(json)
+        .expect("Payload firmware lama tanpa battery SHALL CONTINUE TO parse");
+    assert_eq!(parsed.id_perangkat, "ALAT-001");
+    assert_eq!(parsed.battery, None);
+}
+
+/// Validates: Firmware baru kirim battery → ter-deserialize benar.
+#[test]
+fn pres_incoming_data_accepts_payload_with_battery() {
+    let json = r#"{"id_perangkat":"ALAT-001","latitude":-6.7711,"longitude":106.96,"battery":85}"#;
+    let parsed: IncomingData = serde_json::from_str(json)
+        .expect("Payload firmware baru dengan battery SHALL parse");
+    assert_eq!(parsed.battery, Some(85));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 8,
+        ..ProptestConfig::default()
+    })]
+
+    /// Validates: Battery sanitization invariant — output SELALU ∈
+    /// {None} ∪ {Some(0..=100)} untuk input arbitrer i16.
+    #[test]
+    fn pres_battery_sanitize_invariant(b in proptest::option::of(any::<i16>())) {
+        let out = sanitize_battery(b);
+        match out {
+            Some(v) => prop_assert!(
+                (0..=100).contains(&v),
+                "sanitize_battery output Some({}) di luar 0..=100", v
+            ),
+            None => {} // None selalu valid
+        }
+    }
 }

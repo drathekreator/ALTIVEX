@@ -59,20 +59,34 @@ struct SerialHub {
     connected: Arc<AtomicBool>,
 }
 
-// 1. Model data untuk menerima JSON dari perangkat (Heltec Basecamp)
+// 1. Model data untuk menerima JSON dari perangkat (transmitter pendaki).
+//
+// Field `battery` (post-feedback) adalah persen 0-100 yang dihitung di
+// firmware transmitter. Optional supaya kompatibel dengan firmware lama
+// yang belum kirim battery — null/missing → simpan NULL ke DB →
+// frontend render "—".
 #[derive(Deserialize, Serialize, Clone)]
 struct IncomingData {
     id_perangkat: String,
     latitude: f64,
     longitude: f64,
+    /// Persen baterai 0-100 dari transmitter pendaki. `None` = tidak
+    /// dikirim (firmware lama). Out-of-range akan di-clamp ke None
+    /// di handler supaya nilai gila tidak masuk DB.
+    #[serde(default)]
+    battery: Option<i16>,
 }
 
-// 2. Model data untuk dikirim ke Web Dashboard (diubah ke JSON)
+// 2. Model data untuk dikirim ke Web Dashboard (diubah ke JSON).
+//
+// Battery di-include di response /api/sensor + /api/sensor/latest
+// supaya frontend bisa render indicator per device.
 #[derive(Serialize, FromRow)]
 struct SensorRecord {
     id_perangkat: String,
     latitude: f64,
     longitude: f64,
+    battery: Option<i16>,
 }
 
 // ============================================================================
@@ -108,6 +122,17 @@ fn valid_coord(d: &IncomingData) -> bool {
     id_ok && lat_ok && lon_ok && not_zero
 }
 
+/// Sanitize battery value: hanya 0..=100 yang valid. Out-of-range
+/// (negatif, >100, atau missing) → None. Firmware bisa kirim 0-100
+/// langsung; backend tidak melakukan kalkulasi voltage→persen, itu
+/// tanggung jawab transmitter.
+fn sanitize_battery(b: Option<i16>) -> Option<i16> {
+    match b {
+        Some(v) if (0..=100).contains(&v) => Some(v),
+        _ => None,
+    }
+}
+
 // 3. Endpoint POST: Menyimpan data baru ke Database
 async fn terima_data(
     data: web::Json<IncomingData>,
@@ -128,15 +153,18 @@ async fn terima_data(
     }
 
     let query = "
-        INSERT INTO log_sensor (id_perangkat, latitude, longitude)
-        VALUES ($1, $2, $3)
+        INSERT INTO log_sensor (id_perangkat, latitude, longitude, battery)
+        VALUES ($1, $2, $3, $4)
     ";
+
+    let battery = sanitize_battery(data.battery);
 
     // Mengeksekusi query insert ke PostgreSQL
     let result = sqlx::query(query)
         .bind(&data.id_perangkat)
         .bind(data.latitude)
         .bind(data.longitude)
+        .bind(battery)
         .execute(pool.get_ref())
         .await;
 
@@ -154,7 +182,7 @@ async fn terima_data(
 // 4. Endpoint GET: Mengambil data terbaru untuk ditampilkan di Peta
 async fn ambil_data(pool: web::Data<Pool<Postgres>>) -> impl Responder {
     // Menarik 50 data terbaru
-    let query = "SELECT id_perangkat, latitude, longitude FROM log_sensor ORDER BY timestamp DESC LIMIT 50";
+    let query = "SELECT id_perangkat, latitude, longitude, battery FROM log_sensor ORDER BY timestamp DESC LIMIT 50";
 
     let records = sqlx::query_as::<_, SensorRecord>(query)
         .fetch_all(pool.get_ref())
@@ -188,7 +216,7 @@ async fn ambil_sensor_latest(pool: web::Data<Pool<Postgres>>) -> impl Responder 
     // per alat. Karena `ORDER BY id_perangkat, timestamp DESC`, "pertama"
     // di sini = baris dengan timestamp paling baru untuk tiap alat — yaitu
     // posisi terkini per alat, persis yang dibutuhkan sidebar.
-    let query = "SELECT DISTINCT ON (id_perangkat) id_perangkat, latitude, longitude \
+    let query = "SELECT DISTINCT ON (id_perangkat) id_perangkat, latitude, longitude, battery \
                  FROM log_sensor \
                  ORDER BY id_perangkat, timestamp DESC";
 
@@ -777,14 +805,16 @@ async fn start_mqtt_client(
                         // Idempotent insert (B10) — broker bisa retransmit
                         // pesan yang sama, kita absorb via UNIQUE INDEX
                         // `log_sensor_dedupe_idx (id_perangkat, timestamp)`.
+                        let battery = sanitize_battery(data.battery);
                         let insert_res = sqlx::query(
-                            "INSERT INTO log_sensor (id_perangkat, latitude, longitude) \
-                             VALUES ($1, $2, $3) \
+                            "INSERT INTO log_sensor (id_perangkat, latitude, longitude, battery) \
+                             VALUES ($1, $2, $3, $4) \
                              ON CONFLICT DO NOTHING",
                         )
                         .bind(&data.id_perangkat)
                         .bind(data.latitude)
                         .bind(data.longitude)
+                        .bind(battery)
                         .execute(&pool)
                         .await;
 
@@ -956,12 +986,14 @@ async fn start_serial_reader(
                                             continue;
                                         }
 
+                                        let battery = sanitize_battery(data.battery);
                                         let _ = sqlx::query(
-                                            "INSERT INTO log_sensor (id_perangkat, latitude, longitude) VALUES ($1, $2, $3)",
+                                            "INSERT INTO log_sensor (id_perangkat, latitude, longitude, battery) VALUES ($1, $2, $3, $4)",
                                         )
                                         .bind(&data.id_perangkat)
                                         .bind(data.latitude)
                                         .bind(data.longitude)
+                                        .bind(battery)
                                         .execute(&pool)
                                         .await;
 
@@ -1295,6 +1327,16 @@ async fn main() -> std::io::Result<()> {
     .execute(&pool)
     .await
     .expect("Gagal menambah kolom tanggal_turun");
+
+    // Battery monitor (post-feedback) — kolom persen baterai 0-100
+    // dari transmitter pendaki. NULL untuk pesan dari firmware lama
+    // yang belum kirim battery. Idempotent ALTER.
+    sqlx::query(
+        "ALTER TABLE log_sensor ADD COLUMN IF NOT EXISTS battery SMALLINT NULL;"
+    )
+    .execute(&pool)
+    .await
+    .expect("Gagal menambah kolom battery di log_sensor");
 
     // MIGRASI: Tambahkan kolom telepon_darurat jika tabel lama belum punya
     let _ = sqlx::query("ALTER TABLE pendaki ADD COLUMN IF NOT EXISTS telepon_darurat VARCHAR(20) NOT NULL DEFAULT '';")

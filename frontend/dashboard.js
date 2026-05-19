@@ -204,6 +204,87 @@ const notifiedDevices = new Map();
 function setNotified(id, val) { notifiedDevices.set(id, val === true); }
 function isNotified(id)       { return notifiedDevices.get(id) === true; }
 
+// ====================================================================
+// BATTERY MONITOR (post-feedback)
+// --------------------------------------------------------------------
+// Threshold UI:
+//   ≥ 75%       → batteryFull,    color: success (hijau)
+//   50-74%      → batteryHigh,    color: success (hijau)
+//   25-49%      → batteryMid,     color: primary (kuning/mustard)
+//   15-24%      → batteryLow,     color: danger (merah, tidak pulse)
+//   1-14%       → batteryEmpty,   color: danger (merah + pulse)
+//   0%          → batteryEmpty,   color: muted (alat mati)
+//   null/undef  → batteryUnknown, color: muted ("?")
+//
+// Threshold notifikasi browser: 15%. Operator basecamp dapat 1
+// notif per device per turun di bawah threshold; reset begitu
+// battery >25% (hysteresis supaya tidak spam saat fluktuasi).
+// --------------------------------------------------------------------
+const BATTERY_NOTIF_THRESHOLD = 15;
+const BATTERY_NOTIF_RESET_THRESHOLD = 25;
+
+// Map id_perangkat → boolean: sudah pernah dapat notif low-battery
+// di sesi ini? Reset kalau battery naik di atas RESET threshold.
+const batteryNotified = new Map();
+
+/**
+ * Pilih nama icon + class warna sesuai persen battery.
+ * @param {number|null|undefined} pct
+ * @returns {{name: string, level: string, label: string}}
+ */
+function batteryStyle(pct) {
+    if (pct === null || pct === undefined || !Number.isFinite(pct)) {
+        return { name: "batteryUnknown", level: "unknown", label: "—" };
+    }
+    const p = Math.max(0, Math.min(100, Math.round(pct)));
+    if (p === 0)        return { name: "batteryEmpty", level: "off",  label: "0%" };
+    if (p < 15)         return { name: "batteryEmpty", level: "crit", label: `${p}%` };
+    if (p < 25)         return { name: "batteryLow",   level: "low",  label: `${p}%` };
+    if (p < 50)         return { name: "batteryMid",   level: "mid",  label: `${p}%` };
+    if (p < 75)         return { name: "batteryHigh",  level: "ok",   label: `${p}%` };
+    return                     { name: "batteryFull",  level: "full", label: `${p}%` };
+}
+
+/**
+ * Render battery indicator inline (icon + persen) untuk dipakai di
+ * alert-card / standby-card. Pakai class CSS `.battery-pill--<level>`
+ * untuk styling warna; ICON() kembalikan SVG dengan currentColor yang
+ * inherit dari class wrapper.
+ */
+function batteryPill(pct) {
+    const s = batteryStyle(pct);
+    return `<span class="battery-pill battery-pill--${s.level}" title="Baterai ${s.label}">${ICON(s.name, 16)}<span class="battery-pill__label">${s.label}</span></span>`;
+}
+
+/**
+ * Trigger notifikasi browser sekali saat battery turun di bawah
+ * BATTERY_NOTIF_THRESHOLD untuk pertama kali. Reset state begitu
+ * battery naik di atas RESET threshold (hysteresis 10% gap).
+ */
+function maybeNotifyLowBattery(id, pct, hikerName) {
+    if (pct === null || pct === undefined || !Number.isFinite(pct)) return;
+    const wasNotified = batteryNotified.get(id) === true;
+
+    if (pct >= BATTERY_NOTIF_RESET_THRESHOLD && wasNotified) {
+        // Reset — battery naik kembali (mis. ganti baterai), siap notif
+        // lagi kalau turun di bawah threshold di waktu lain.
+        batteryNotified.set(id, false);
+        return;
+    }
+
+    if (pct < BATTERY_NOTIF_THRESHOLD && !wasNotified) {
+        const who = hikerName ? hikerName : `Alat ${id}`;
+        sendNotification(
+            "Baterai Lemah",
+            `${who} tinggal ${pct}% — segera ganti / charge.`
+        );
+        if (typeof showToast === "function") {
+            showToast(`Baterai ${who} tinggal ${pct}%`, "error");
+        }
+        batteryNotified.set(id, true);
+    }
+}
+
 // GEO.json state
 let geoData = null;
 let routeFeatures = null;
@@ -732,16 +813,24 @@ async function exportExcel() {
         if (mins > 0 || parts.length === 0) parts.push(`${mins}mnt`);
         return parts.join(" ");
     };
-    const rows = historyData.map((p, i) => ({
-        "No": i + 1,
-        "Nama Pendaki": p.nama_pendaki ?? "",
-        "ID Perangkat": p.id_perangkat ?? "",
-        "Telepon Darurat": p.telepon_darurat ?? "",
-        "Status": p.status ?? "",
-        "Waktu Naik": fmtDate(p.tanggal_naik),
-        "Waktu Turun": fmtDate(p.tanggal_turun),
-        "Durasi Pendakian": calcDuration(p.tanggal_naik, p.tanggal_turun),
-    }));
+    const rows = historyData.map((p, i) => {
+        // Cari snapshot battery terbaru untuk alat pendaki ini
+        // (kalau ada di latestDataPerDevice). Pendaki yang sudah turun
+        // mungkin alatnya dipakai pendaki lain — best effort.
+        const live = latestDataPerDevice[p.id_perangkat];
+        const battLabel = batteryStyle(live ? live.battery : null).label;
+        return {
+            "No": i + 1,
+            "Nama Pendaki": p.nama_pendaki ?? "",
+            "ID Perangkat": p.id_perangkat ?? "",
+            "Telepon Darurat": p.telepon_darurat ?? "",
+            "Status": p.status ?? "",
+            "Waktu Naik": fmtDate(p.tanggal_naik),
+            "Waktu Turun": fmtDate(p.tanggal_turun),
+            "Durasi Pendakian": calcDuration(p.tanggal_naik, p.tanggal_turun),
+            "Baterai (snapshot)": battLabel,
+        };
+    });
 
     const ws = XLSX.utils.json_to_sheet(rows);
 
@@ -919,6 +1008,12 @@ function _renderHikerCards() {
         const isInside = pointInGeofence(point);
         const hiker = registeredHikers[id];
 
+        // Battery monitor — trigger notif kalau pertama kali < 15%.
+        // Hiker bisa null kalau alat masih standby; pakai id sebagai
+        // fallback display name di pesan notif.
+        maybeNotifyLowBattery(id, data.battery, hiker ? hiker.nama_pendaki : null);
+        const battHtml = batteryPill(data.battery);
+
         if (!activeMarkers[id]) {
             activeMarkers[id] = L.marker([data.latitude, data.longitude]).addTo(map);
         } else {
@@ -930,8 +1025,9 @@ function _renderHikerCards() {
         if (hiker) {
             const namaEsc = escapeHtml(hiker.nama_pendaki);
             const telpEsc = escapeHtml(hiker.telepon_darurat);
+            const battStyle = batteryStyle(data.battery);
             activeMarkers[id].bindPopup(
-                `<b>${namaEsc}</b><br>ID: ${idEsc}<br>Status: ${isInside ? 'Aman' : 'KELUAR JALUR'}`
+                `<b>${namaEsc}</b><br>ID: ${idEsc}<br>Status: ${isInside ? 'Aman' : 'KELUAR JALUR'}<br>Baterai: ${battStyle.label}`
             );
 
             if (!isInside) {
@@ -946,7 +1042,10 @@ function _renderHikerCards() {
                     <div class="neo-card alert-card">
                         <div class="alert-card__name">${ICON('warning', 18)} ${escapeHtml(String(hiker.nama_pendaki ?? "").toUpperCase())}</div>
                         <div class="alert-card__meta">ID: ${idEsc} | Telp: ${telpEsc}</div>
-                        <div class="neo-badge badge-keluar">KELUAR KORIDOR</div>
+                        <div class="alert-card__row">
+                            <div class="neo-badge badge-keluar">KELUAR KORIDOR</div>
+                            ${battHtml}
+                        </div>
                         <div class="alert-card__actions">
                             <button class="neo-btn neo-btn-sm neo-btn-red" data-action="alert" data-id="${idEsc}">${ICON('bell', 14)} ALERT</button>
                             <button class="neo-btn neo-btn-sm" data-action="path" data-id="${idEsc}">${ICON('map', 14)} PATH</button>
@@ -962,6 +1061,7 @@ function _renderHikerCards() {
                 <div class="neo-card standby-card">
                     <div class="standby-card__name">${ICON('device', 18)} ${idEsc}</div>
                     <div class="standby-card__meta">Status: Standby (Online)</div>
+                    <div class="standby-card__row">${battHtml}</div>
                     <button class="neo-btn neo-btn-sm neo-btn-blue" data-action="register" data-id="${idEsc}">${ICON('plus', 14)} DAFTAR</button>
                 </div>
             `;

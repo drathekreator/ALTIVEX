@@ -225,6 +225,42 @@ const ICON_PATHS = {
         <path d="M12 3 L20 6 V12 C20 17 16 21 12 22 C8 21 4 17 4 12 V6 Z" />
         <path d="M9 12 L11 14 L15 10" />
     `,
+
+    // ---------- BATTERY ----------
+    // Body battery + tip kanan + level fill (dynamic via render context).
+    // Untuk simplicity kita pakai 4 varian fixed level — render function
+    // batteryIcon(percent) di dashboard.js akan pilih varian sesuai threshold.
+    batteryFull: `
+        <rect x="2" y="8" width="17" height="10" rx="1.5" />
+        <rect x="20" y="11" width="2" height="4" fill="currentColor" stroke="none" />
+        <rect x="4" y="10" width="13" height="6" fill="currentColor" stroke="none" />
+    `,
+    batteryHigh: `
+        <rect x="2" y="8" width="17" height="10" rx="1.5" />
+        <rect x="20" y="11" width="2" height="4" fill="currentColor" stroke="none" />
+        <rect x="4" y="10" width="9" height="6" fill="currentColor" stroke="none" />
+    `,
+    batteryMid: `
+        <rect x="2" y="8" width="17" height="10" rx="1.5" />
+        <rect x="20" y="11" width="2" height="4" fill="currentColor" stroke="none" />
+        <rect x="4" y="10" width="6" height="6" fill="currentColor" stroke="none" />
+    `,
+    batteryLow: `
+        <rect x="2" y="8" width="17" height="10" rx="1.5" />
+        <rect x="20" y="11" width="2" height="4" fill="currentColor" stroke="none" />
+        <rect x="4" y="10" width="3" height="6" fill="currentColor" stroke="none" />
+    `,
+    batteryEmpty: `
+        <rect x="2" y="8" width="17" height="10" rx="1.5" />
+        <rect x="20" y="11" width="2" height="4" fill="currentColor" stroke="none" />
+        <path d="M9 11 L13 15 M13 11 L9 15" stroke-width="2" />
+    `,
+    batteryUnknown: `
+        <rect x="2" y="8" width="17" height="10" rx="1.5" />
+        <rect x="20" y="11" width="2" height="4" fill="currentColor" stroke="none" />
+        <path d="M10 11 A 1.5 1.5 0 0 1 13 11 C 13 13 11 13 11 14" stroke-width="2"/>
+        <circle cx="11" cy="16" r="0.6" fill="currentColor" stroke="none"/>
+    `,
 };
 
 /**

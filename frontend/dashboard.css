@@ -1041,6 +1041,55 @@ body.dark-mode .input-select-white option {
     display: none;
 }
 
+/* ---------- BATTERY PILL ---------- */
+/* Indikator baterai yang muncul di alert-card / standby-card.
+   Pakai class `.battery-pill--<level>` untuk warna sesuai threshold.
+   `.battery-pill__label` adalah persen ("85%" / "—"). */
+.battery-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    font-size: 0.78rem;
+    line-height: 1;
+    box-shadow: 2px 2px 0 0 var(--line);
+}
+
+.battery-pill__label {
+    letter-spacing: 0.3px;
+}
+
+.battery-pill--full,
+.battery-pill--ok    { color: var(--green); }
+.battery-pill--mid   { color: var(--primary); }
+.battery-pill--low   { color: var(--red); }
+.battery-pill--crit,
+.battery-pill--off   {
+    color: var(--red);
+    animation: battery-pulse 1.4s ease-in-out infinite;
+}
+.battery-pill--unknown { color: var(--muted); }
+
+@keyframes battery-pulse {
+    0%, 100% { transform: scale(1);    box-shadow: 2px 2px 0 0 var(--line); }
+    50%      { transform: scale(1.05); box-shadow: 4px 4px 0 0 var(--red); }
+}
+
+/* Row container untuk menempatkan badge "KELUAR KORIDOR" + battery
+   pill di alert card. Standby card hanya berisi battery pill. */
+.alert-card__row,
+.standby-card__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 10px 0;
+    flex-wrap: wrap;
+}
+
 /* ---------- LOADING SKELETON ---------- */
 /* Skeleton placeholder muncul saat sidebar/banner belum sempat
    re-populate setelah refresh — terutama di mobile yang koneksinya
