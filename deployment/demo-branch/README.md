@@ -124,6 +124,43 @@ docker compose -f deployment/demo-branch/docker-compose.demo.yml down -v
 rm -f deployment/demo-branch/.env.demo
 ```
 
+## Troubleshooting
+
+### Mosquitto: `Unable to open pwfile "/mosquitto/config/passwd"`
+
+Mosquitto terminate dengan error path passwd → 99% kasusnya **CRLF
+line endings** di `mosquitto.conf` (file di-generate Windows lalu
+push ke git tanpa `.gitattributes`).
+
+Recovery di VM:
+```bash
+cd ~/ALTIVEX/deployment/demo-branch
+sed -i 's/\r$//' mosquitto-demo/config/mosquitto.conf
+docker compose -f docker-compose.demo.yml \
+    --env-file .env.demo restart mosquitto-demo
+```
+
+Akar permanen: pastikan `.gitattributes` di repo root sudah lock
+`*.conf`, `*.sh`, `*.yml` ke `eol=lf` (sudah ada di repo ini).
+
+### Backend: `failed to lookup address information: mosquitto-demo`
+
+Ini efek domino: container `altivex_mosquitto_demo` mati →
+Docker DNS gak resolve nama hostname-nya. Fix mosquitto duluan
+(lihat bagian atas), backend akan auto-reconnect ke broker dalam
+1-30 detik (exponential backoff sudah built-in).
+
+### Postgres log spam: `database "altivex_demo" does not exist`
+
+Ini noise dari healthcheck v1 yang sudah di-fix di v2. Pull update
+terbaru:
+```bash
+cd ~/ALTIVEX
+git pull
+docker compose -f deployment/demo-branch/docker-compose.demo.yml \
+    --env-file deployment/demo-branch/.env.demo up -d
+```
+
 ## MQTT untuk ESP32 Demo
 
 ESP32 yang dipakai demo harus publish ke:

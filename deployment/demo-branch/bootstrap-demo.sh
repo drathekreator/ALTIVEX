@@ -12,8 +12,21 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------
+# CRLF safety: kalau script ini di-clone via Windows tanpa .gitattributes
+# yang force LF, file ini bisa punya \r\n endings yang bikin bash gagal
+# parse heredoc + path. Self-heal: rewrite diri sendiri ke LF kalau perlu.
+# ---------------------------------------------------------------------
+SELF="$(readlink -f "$0")"
+if grep -q $'\r' "$SELF" 2>/dev/null; then
+    echo "🔧 Fixing CRLF line endings di $SELF..."
+    sed -i 's/\r$//' "$SELF"
+    echo "   Re-running script dengan line endings yang sudah benar..."
+    exec bash "$SELF" "$@"
+fi
+
 # Pindah ke folder demo-branch
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+SCRIPT_DIR="$(dirname "$SELF")"
 cd "$SCRIPT_DIR"
 
 ENV_FILE=".env.demo"

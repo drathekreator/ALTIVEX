@@ -1,0 +1,31 @@
+# Force LF line endings untuk file yang dieksekusi/parsed di Linux
+# Tanpa ini, git autocrlf di Windows checkout file dengan CRLF, lalu
+# Linux tools (bash, mosquitto, docker compose) salah parse \r di akhir
+# baris → "Unable to open pwfile", path resolution gagal, dll.
+
+*.sh             text eol=lf
+*.bash           text eol=lf
+*.conf           text eol=lf
+*.yml            text eol=lf
+*.yaml           text eol=lf
+Dockerfile       text eol=lf
+*.dockerfile     text eol=lf
+.env             text eol=lf
+.env.*           text eol=lf
+*.toml           text eol=lf
+
+# JSON harus LF juga (nginx config, GeoJSON di-parse browser)
+*.json           text eol=lf
+
+# Source code biarkan default platform autocrlf (CRLF di Windows OK)
+*.rs             text
+*.js             text
+*.css            text
+*.html           text
+*.md             text
+
+# Binary jangan diutak-atik
+*.png            binary
+*.jpg            binary
+*.ico            binary
+*.svg            text eol=lf

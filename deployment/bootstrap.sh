@@ -21,6 +21,19 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------
+# CRLF safety: kalau file ini di-clone via Windows tanpa .gitattributes,
+# bash bisa salah parse \r di akhir baris. Self-heal sekali, lalu
+# re-exec dengan endings yang sudah LF.
+# ---------------------------------------------------------------------
+SELF="$(readlink -f "$0")"
+if grep -q $'\r' "$SELF" 2>/dev/null; then
+    echo "🔧 Fixing CRLF line endings di $SELF..."
+    sed -i 's/\r$//' "$SELF"
+    echo "   Re-running script..."
+    exec bash "$SELF" "$@"
+fi
+
 # Pindah ke parent dari script ini (= repo root) supaya path relatif
 # konsisten apa pun cwd pemanggil.
 cd "$(dirname "$(readlink -f "$0")")/.."
