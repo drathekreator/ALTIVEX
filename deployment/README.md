@@ -248,7 +248,7 @@ Detail lengkap: [`deployment/demo-branch/README.md`](demo-branch/README.md)
 
 Port mapping default:
 - Prod: backend `:8080`, MQTT `:1883`
-- Demo: backend `:8081`, MQTT `:1884`
+- Demo: backend `:8081`, MQTT `:1885`
 
 Tambah cabang lain (Semeru, Rinjani, dll.) dengan copy folder +
 ganti port. Lihat panduan di README demo-branch.

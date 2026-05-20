@@ -45,11 +45,11 @@ docker compose -f deployment/demo-branch/docker-compose.demo.yml logs -f backend
 
 ## Firewall GCP (sekali)
 
-Buka port 1884 untuk MQTT demo:
+Buka port 1885 untuk MQTT demo:
 
 ```bash
 gcloud compute firewall-rules create altivex-mqtt-demo \
-    --allow tcp:1884 \
+    --allow tcp:1885 \
     --target-tags=mqtt-broker \
     --description="MQTT port untuk ALTIVEX demo branch"
 ```
@@ -128,6 +128,6 @@ rm -f deployment/demo-branch/.env.demo
 
 ESP32 yang dipakai demo harus publish ke:
 - Host: `altivex-demo.duckdns.org` (atau IP VM langsung)
-- Port: `1884` (bukan 1883!)
+- Port: `1885` (bukan 1883!)
 - Username/Password: lihat output `bootstrap-demo.sh`
 - Topic: `altivex/sensor/data` (sama)

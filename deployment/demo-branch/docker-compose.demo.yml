@@ -32,7 +32,7 @@ services:
     image: eclipse-mosquitto:2
     container_name: altivex_mosquitto_demo
     ports:
-      - "1884:1883"
+      - "1885:1883"
     volumes:
       - ./mosquitto-demo/config:/mosquitto/config:ro
       - ./mosquitto-demo/data:/mosquitto/data
