@@ -58,40 +58,49 @@ gcloud compute firewall-rules create altivex-mqtt-demo \
 
 ## Reverse Proxy (nginx yang sudah ada)
 
-Tambahkan server block baru di nginx config VM:
+File nginx config siap-paste sudah disediakan di folder ini:
+- `nginx-altivex-demo-bootstrap.conf` — HTTP-only, untuk fase awal certbot
+- `nginx-altivex-demo.conf` — HTTPS final dengan WebSocket + security headers
 
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name altivex-demo.duckdns.org;
+**Langkah lengkap (di VM, sekali setup):**
 
-    ssl_certificate     /etc/letsencrypt/live/altivex-demo.duckdns.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/altivex-demo.duckdns.org/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:8081;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-
-server {
-    listen 80;
-    server_name altivex-demo.duckdns.org;
-    return 301 https://$host$request_uri;
-}
-```
-
-Lalu:
 ```bash
-sudo certbot certonly --nginx -d altivex-demo.duckdns.org
+# 1. Pasang versi bootstrap (HTTP-only) supaya certbot bisa issue cert
+sudo cp ~/ALTIVEX/deployment/demo-branch/nginx-altivex-demo-bootstrap.conf \
+    /etc/nginx/sites-available/altivex-demo
+sudo ln -sf /etc/nginx/sites-available/altivex-demo \
+    /etc/nginx/sites-enabled/altivex-demo
 sudo nginx -t && sudo systemctl reload nginx
+
+# 2. Pastikan DNS sudah propagate
+dig +short altivex-demo.duckdns.org
+# Harus return IP eksternal VM (35.219.1.25)
+
+# 3. Issue cert via certbot
+sudo certbot certonly --webroot -w /var/www/html \
+    -d altivex-demo.duckdns.org \
+    --non-interactive --agree-tos --email <email-anda>
+
+# 4. Replace dengan versi HTTPS final
+sudo cp ~/ALTIVEX/deployment/demo-branch/nginx-altivex-demo.conf \
+    /etc/nginx/sites-available/altivex-demo
+sudo nginx -t && sudo systemctl reload nginx
+
+# 5. Verify
+curl -I https://altivex-demo.duckdns.org/api/sensor/latest
+# Harus return HTTP/2 200 OK
 ```
+
+**Auto-renew certbot** sudah jalan via systemd timer (default Ubuntu).
+Cek dengan:
+```bash
+sudo systemctl status certbot.timer
+```
+
+> ⚠️ Pastikan `/var/www/html` ada dan writable untuk certbot:
+> ```bash
+> sudo mkdir -p /var/www/html
+> ```
 
 ## Ganti Peta Geofencing
 
