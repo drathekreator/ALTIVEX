@@ -1,0 +1,5 @@
+# Credential & runtime — JANGAN commit
+.env.demo
+mosquitto-demo/config/passwd
+mosquitto-demo/data/
+mosquitto-demo/log/

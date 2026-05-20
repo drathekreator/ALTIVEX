@@ -291,9 +291,10 @@ let routeFeatures = null;
 let waypointFeatures = null;
 
 const routeColors = {
-    'Cibodas':       '#2979FF',
-    'Gunung Putri':  '#FF6D00',
-    'Selabintana':   '#AA00FF'
+    'Cibodas':          '#2979FF',
+    'Gunung Putri':     '#FF6D00',
+    'Selabintana':      '#AA00FF',
+    'Jl. Raya Puncak':  '#F5B700'
 };
 
 // ====================================================================
@@ -337,7 +338,7 @@ async function initGeoData() {
             style: function(feature) {
                 const routeName = feature.properties.route || '';
                 return {
-                    color: routeColors[routeName] || '#000',
+                    color: routeColors[routeName] || 'var(--primary, #F5B700)',
                     weight: 4,
                     dashArray: '8, 6',
                     opacity: 0.85
@@ -348,7 +349,17 @@ async function initGeoData() {
             }
         }).addTo(map);
 
-        geofenceBuffer = turf.buffer(routeFeatures, 0.05, { units: 'kilometers' });
+        // Kalau GEO.json sudah punya Polygon/MultiPolygon manual (geofence
+        // corridor yang dipetakan tangan), pakai itu langsung — lebih akurat
+        // dari auto-buffer. Fallback ke turf.buffer 50m kalau tidak ada.
+        const manualGeofence = geoData.features.filter(f =>
+            f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'
+        );
+        if (manualGeofence.length > 0) {
+            geofenceBuffer = { type: "FeatureCollection", features: manualGeofence };
+        } else {
+            geofenceBuffer = turf.buffer(routeFeatures, 0.05, { units: 'kilometers' });
+        }
 
         L.geoJSON(geofenceBuffer, {
             style: {

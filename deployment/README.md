@@ -231,6 +231,30 @@ docker compose exec postgres psql \
 
 ---
 
+## 5. Demo Branch (Multi-Gunung)
+
+Untuk menjalankan instance ALTIVEX terpisah (peta berbeda, DB berbeda,
+credential berbeda) di VM yang sama — misalnya untuk demo di gunung lain:
+
+```bash
+cd ~/ALTIVEX
+bash deployment/demo-branch/bootstrap-demo.sh
+
+docker compose -f deployment/demo-branch/docker-compose.demo.yml \
+    --env-file deployment/demo-branch/.env.demo up -d --build
+```
+
+Detail lengkap: [`deployment/demo-branch/README.md`](demo-branch/README.md)
+
+Port mapping default:
+- Prod: backend `:8080`, MQTT `:1883`
+- Demo: backend `:8081`, MQTT `:1884`
+
+Tambah cabang lain (Semeru, Rinjani, dll.) dengan copy folder +
+ganti port. Lihat panduan di README demo-branch.
+
+---
+
 ## Troubleshooting
 
 ### `cd: No such file or directory`

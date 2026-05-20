@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "name": "Geofence - Jl. Raya Puncak (Ciawi → Gadog)",
+  "metadata": {
+    "description": "Geofencing map jalur Jl. Raya Puncak dari Ciawi ke Gadog, Jawa Barat",
+    "source": "Google Maps",
+    "created": "2026-05-20",
+    "crs": "EPSG:4326",
+    "buffer_meters": 100
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "origin",
+      "properties": {
+        "name": "Titik Asal — Ciawi",
+        "address": "Jl. Raya Puncak-Bogor, Pandansari, Kec. Ciawi, Kabupaten Bogor, Jawa Barat 16720",
+        "type": "waypoint",
+        "route": "Jl. Raya Puncak",
+        "order": 1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.8589743, -6.6552671]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "destination",
+      "properties": {
+        "name": "Titik Tujuan — Gadog",
+        "address": "Jl. Raya Puncak - Gadog, Jawa Barat",
+        "type": "waypoint",
+        "route": "Jl. Raya Puncak",
+        "order": 2
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.9461913, -6.6853882]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "route",
+      "properties": {
+        "name": "Jalur Jl. Raya Puncak",
+        "type": "route",
+        "route": "Jl. Raya Puncak",
+        "road": "Jl. Raya Puncak",
+        "from": "Ciawi",
+        "to": "Gadog",
+        "distance_km": 9.7,
+        "travel_mode": "driving"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [106.8589743, -6.6552671],
+          [106.8650000, -6.6580000],
+          [106.8720000, -6.6620000],
+          [106.8790000, -6.6660000],
+          [106.8870000, -6.6700000],
+          [106.8950000, -6.6740000],
+          [106.9030000, -6.6770000],
+          [106.9110000, -6.6800000],
+          [106.9200000, -6.6820000],
+          [106.9300000, -6.6840000],
+          [106.9380000, -6.6848000],
+          [106.9461913, -6.6853882]
+        ]
+      }
+    }
+  ]
+}
