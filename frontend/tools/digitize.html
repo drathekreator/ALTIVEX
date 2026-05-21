@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>ALTIVEX — Trail Digitizer (Pangrango)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body {
+            font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            height: 100vh;
+            background: #fff6e4;
+            color: #1a1a1a;
+        }
+        #map { height: 100vh; }
+        aside {
+            padding: 16px;
+            overflow-y: auto;
+            border-left: 2px solid #1a1a1a;
+            background: #ffffff;
+        }
+        h1 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h1 small {
+            font-weight: 500;
+            font-size: 12px;
+            color: #6b5e47;
+        }
+        p { margin: 6px 0; font-size: 13px; line-height: 1.5; }
+        fieldset {
+            border: 2px solid #1a1a1a;
+            margin: 12px 0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #fff6e4;
+        }
+        legend {
+            font-weight: 700;
+            font-size: 13px;
+            padding: 0 6px;
+            background: #1a1a1a;
+            color: #fff6e4;
+            border-radius: 4px;
+        }
+        button {
+            font-family: inherit;
+            font-size: 13px;
+            padding: 6px 10px;
+            border: 2px solid #1a1a1a;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.1s;
+        }
+        button:hover:not(:disabled) { background: #f5b700; }
+        button.active { background: #f5b700; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .stat {
+            font-size: 12px;
+            color: #6b5e47;
+            margin-top: 6px;
+            line-height: 1.6;
+        }
+        pre {
+            background: #1a1a1a;
+            color: #fff6e4;
+            font-size: 11px;
+            padding: 8px;
+            max-height: 180px;
+            overflow: auto;
+            border-radius: 4px;
+            margin: 6px 0 0;
+        }
+        input[type="file"] { font-size: 12px; }
+        .hint {
+            background: #fffbeb;
+            border-left: 3px solid #f5b700;
+            padding: 6px 10px;
+            font-size: 12px;
+            margin: 6px 0;
+        }
+        .swatch {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid #1a1a1a;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <aside>
+        <h1>🥾 Trail Digitizer <small>Pangrango</small></h1>
+        <p>Klik di peta untuk menambah titik ke jalur aktif. Klik titik existing untuk hapus.</p>
+
+        <fieldset>
+            <legend>1. Load GEO.json existing</legend>
+            <input type="file" id="file-input" accept=".json,application/json" />
+            <p class="stat" id="loaded-status">Belum dimuat. Drag <code>frontend/GEO.json</code> ke sini.</p>
+        </fieldset>
+
+        <fieldset>
+            <legend>2. Pilih jalur aktif</legend>
+            <div class="row" id="route-buttons">
+                <button data-route="Cibodas"><span class="swatch" style="background:#2979FF"></span>Cibodas</button>
+                <button data-route="Gunung Putri"><span class="swatch" style="background:#FF6D00"></span>Gunung Putri</button>
+                <button data-route="Selabintana"><span class="swatch" style="background:#AA00FF"></span>Selabintana</button>
+            </div>
+            <p class="stat" id="active-stats">Belum aktif.</p>
+        </fieldset>
+
+        <fieldset>
+            <legend>3. Edit jalur aktif</legend>
+            <div class="row">
+                <button id="btn-undo" disabled>↶ Undo</button>
+                <button id="btn-clear" disabled>🗑 Clear jalur</button>
+            </div>
+            <p class="stat hint">Tip: klik salah satu titik di peta untuk hapus titik tertentu (tidak harus dari ujung).</p>
+        </fieldset>
+
+        <fieldset>
+            <legend>4. Reference peta PDF</legend>
+            <button id="btn-pdf">📄 Buka PDF di tab baru</button>
+            <p class="stat">Tool akan minta file PDF dari komputer kamu — buka <code>peta-jalur-pendakian-gunung-gede-pangrango.pdf</code>.</p>
+        </fieldset>
+
+        <fieldset>
+            <legend>5. Export</legend>
+            <div class="row">
+                <button id="btn-export">⬇ Download GEO.json</button>
+                <button id="btn-copy">📋 Copy ke clipboard</button>
+            </div>
+            <p class="stat">LineString lama akan di-replace, semua Point waypoint dipertahankan.</p>
+        </fieldset>
+
+        <fieldset>
+            <legend>Status</legend>
+            <pre id="preview"></pre>
+        </fieldset>
+    </aside>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    // ====================================================================
+    // State
+    // ====================================================================
+    let geoData = null;
+    const routes = {
+        'Cibodas':       { coords: [], color: '#2979FF', polyline: null, markers: [] },
+        'Gunung Putri':  { coords: [], color: '#FF6D00', polyline: null, markers: [] },
+        'Selabintana':   { coords: [], color: '#AA00FF', polyline: null, markers: [] }
+    };
+    let activeRoute = null;
+    let waypointLayer = null;
+
+    // ====================================================================
+    // Map
+    // ====================================================================
+    const map = L.map('map').setView([-6.78, 106.97], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    map.on('click', (e) => {
+        if (!activeRoute) {
+            alert('Pilih jalur aktif dulu (Cibodas / Gunung Putri / Selabintana).');
+            return;
+        }
+        const { lat, lng } = e.latlng;
+        routes[activeRoute].coords.push([lng, lat]); // GeoJSON convention: [lng, lat]
+        redrawAll();
+        updateStats();
+        updatePreview();
+    });
+
+    // ====================================================================
+    // Drawing
+    // ====================================================================
+    function redrawAll() {
+        for (const name of Object.keys(routes)) {
+            const r = routes[name];
+            // Remove old layers
+            if (r.polyline) { r.polyline.remove(); r.polyline = null; }
+            r.markers.forEach(m => m.remove());
+            r.markers = [];
+
+            if (r.coords.length === 0) continue;
+            const latlngs = r.coords.map(([lng, lat]) => [lat, lng]);
+
+            // Polyline (highlight kalau aktif)
+            const isActive = (name === activeRoute);
+            r.polyline = L.polyline(latlngs, {
+                color: r.color,
+                weight: isActive ? 5 : 3,
+                opacity: isActive ? 1 : 0.55,
+                dashArray: isActive ? null : '6 4'
+            }).addTo(map);
+
+            // Markers per titik (cuma untuk jalur aktif, supaya gak penuh)
+            if (isActive) {
+                r.coords.forEach(([lng, lat], idx) => {
+                    const m = L.circleMarker([lat, lng], {
+                        radius: 6,
+                        color: '#1a1a1a',
+                        fillColor: r.color,
+                        fillOpacity: 1,
+                        weight: 2
+                    });
+                    m.bindTooltip(`${name} #${idx + 1}`, { permanent: false });
+                    m.on('click', (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        if (confirm(`Hapus titik #${idx + 1} di jalur ${name}?`)) {
+                            r.coords.splice(idx, 1);
+                            redrawAll();
+                            updateStats();
+                            updatePreview();
+                        }
+                    });
+                    m.addTo(map);
+                    r.markers.push(m);
+                });
+            }
+        }
+    }
+
+    // ====================================================================
+    // Buttons — route selector
+    // ====================================================================
+    document.querySelectorAll('#route-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeRoute = btn.dataset.route;
+            document.querySelectorAll('#route-buttons button').forEach(b => {
+                b.classList.toggle('active', b.dataset.route === activeRoute);
+            });
+            document.getElementById('btn-undo').disabled = false;
+            document.getElementById('btn-clear').disabled = false;
+            updateStats();
+            redrawAll();
+        });
+    });
+
+    // ====================================================================
+    // Buttons — edit
+    // ====================================================================
+    document.getElementById('btn-undo').addEventListener('click', () => {
+        if (!activeRoute) return;
+        routes[activeRoute].coords.pop();
+        redrawAll();
+        updateStats();
+        updatePreview();
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => {
+        if (!activeRoute) return;
+        if (!confirm(`Hapus SEMUA titik di jalur ${activeRoute}? (Tidak bisa di-undo)`)) return;
+        routes[activeRoute].coords = [];
+        redrawAll();
+        updateStats();
+        updatePreview();
+    });
+
+    // ====================================================================
+    // PDF reference
+    // ====================================================================
+    document.getElementById('btn-pdf').addEventListener('click', () => {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/pdf,.pdf';
+        inp.onchange = () => {
+            const file = inp.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            window.open(url, '_blank');
+        };
+        inp.click();
+    });
+
+    // ====================================================================
+    // Load GEO.json
+    // ====================================================================
+    document.getElementById('file-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            geoData = JSON.parse(text);
+            const features = geoData.features || [];
+            const points = features.filter(f => f.geometry && f.geometry.type === 'Point');
+            const lines  = features.filter(f => f.geometry && f.geometry.type === 'LineString');
+
+            document.getElementById('loaded-status').innerHTML =
+                `✅ Loaded: <b>${points.length}</b> Point + <b>${lines.length}</b> LineString.<br>` +
+                `LineString akan di-replace saat export. Point dipertahankan.`;
+
+            // Render existing waypoints sebagai reference
+            if (waypointLayer) waypointLayer.remove();
+            waypointLayer = L.geoJSON({
+                type: 'FeatureCollection',
+                features: points
+            }, {
+                pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                    radius: 5,
+                    color: '#1a1a1a',
+                    fillColor: '#fff',
+                    fillOpacity: 1,
+                    weight: 2
+                }).bindPopup(
+                    `<b>${f.properties.name || '?'}</b><br>` +
+                    `<small>${f.properties.type || ''} — ${f.properties.route || ''}</small>` +
+                    (f.properties.elevation_m ? `<br>${f.properties.elevation_m} mdpl` : '')
+                )
+            }).addTo(map);
+
+            // Pre-fill LineString existing supaya bisa di-edit / di-extend
+            for (const f of lines) {
+                const route = (f.properties && f.properties.route) || '';
+                if (routes[route]) {
+                    routes[route].coords = f.geometry.coordinates.slice();
+                }
+            }
+            redrawAll();
+
+            // Fit map ke bounds waypoint
+            try {
+                const bounds = L.geoJSON({ type: 'FeatureCollection', features: points }).getBounds();
+                if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
+            } catch (_) {}
+
+            updateStats();
+            updatePreview();
+        } catch (err) {
+            alert('Gagal parse GEO.json: ' + err.message);
+        }
+    });
+
+    // ====================================================================
+    // Stats + preview
+    // ====================================================================
+    function updateStats() {
+        const total = Object.values(routes).reduce((s, r) => s + r.coords.length, 0);
+        if (activeRoute) {
+            const c = routes[activeRoute].coords.length;
+            document.getElementById('active-stats').innerHTML =
+                `Aktif: <b>${activeRoute}</b> (${c} titik). Klik di peta untuk tambah.`;
+        } else {
+            document.getElementById('active-stats').textContent = 'Belum aktif.';
+        }
+    }
+
+    function buildExportGeo() {
+        const baseFeatures = geoData
+            ? (geoData.features || []).filter(f => f.geometry && f.geometry.type !== 'LineString')
+            : [];
+        const newLines = Object.entries(routes)
+            .filter(([_, r]) => r.coords.length >= 2)
+            .map(([name, r]) => ({
+                type: 'Feature',
+                properties: {
+                    name: `Jalur ${name}`,
+                    type: 'route',
+                    route: name
+                },
+                geometry: {
+                    type: 'LineString',
+                    coordinates: r.coords
+                }
+            }));
+        return {
+            ...(geoData || { type: 'FeatureCollection' }),
+            type: 'FeatureCollection',
+            features: [...baseFeatures, ...newLines]
+        };
+    }
+
+    function updatePreview() {
+        const exp = buildExportGeo();
+        const summary = {
+            total_features: exp.features.length,
+            line_count: exp.features.filter(f => f.geometry.type === 'LineString').length,
+            point_count: exp.features.filter(f => f.geometry.type === 'Point').length,
+            per_route_points: Object.fromEntries(
+                Object.entries(routes).map(([n, r]) => [n, r.coords.length])
+            )
+        };
+        document.getElementById('preview').textContent = JSON.stringify(summary, null, 2);
+    }
+
+    // ====================================================================
+    // Export
+    // ====================================================================
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const exp = buildExportGeo();
+        const json = JSON.stringify(exp, null, 4);
+        const blob = new Blob([json], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'GEO.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+
+    document.getElementById('btn-copy').addEventListener('click', async () => {
+        const exp = buildExportGeo();
+        const json = JSON.stringify(exp, null, 4);
+        try {
+            await navigator.clipboard.writeText(json);
+            alert(`✅ ${json.length} char ke-copy ke clipboard.`);
+        } catch (err) {
+            alert('Gagal copy: ' + err.message + '\nGunakan tombol Download saja.');
+        }
+    });
+
+    // Init
+    updateStats();
+    updatePreview();
+    </script>
+</body>
+</html>
