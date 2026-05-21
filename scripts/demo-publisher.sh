@@ -165,14 +165,17 @@ while true; do
         "$STAMP" "$COUNT" "$PROGRESS_PCT" "$BATTERY" "$PAYLOAD"
 
     if [[ "$DRY_RUN" != "1" ]]; then
-        if ! mosquitto_pub \
+        if mosquitto_pub \
             -h "$BROKER" -p "$PORT" \
             -u "$USERNAME" -P "$ALTIVEX_DEMO_MQTT_PASSWORD" \
             -t "$TOPIC" \
             -q 1 \
             -m "$PAYLOAD" 2>/dev/null
         then
-            echo "  ⚠️  mosquitto_pub gagal (exit $?)" >&2
+            : # success, silent
+        else
+            rc=$?
+            echo "  ⚠️  mosquitto_pub gagal (exit $rc)" >&2
         fi
     fi
 
