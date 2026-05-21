@@ -118,6 +118,33 @@ ke broker demo.
 5. Marker akan bergerak smooth di peta mengikuti loop, dengan
    battery indicator yang turun pelan-pelan dari 100% ke 20%.
 
+## Quick test tanpa ESP32 (PowerShell + mosquitto_pub)
+
+Kalau belum punya ESP32 atau mau test dulu di laptop, ada simulator
+PowerShell di `scripts/demo-publisher.ps1` yang publish identik
+dengan firmware ESP32:
+
+```powershell
+# 1. Set MQTT password sekali per session
+$env:ALTIVEX_DEMO_MQTT_PASSWORD = '<paste dari .env.demo>'
+
+# 2. Default: DEMO-CIFOR-01, loop 10 menit, publish tiap 3 detik
+.\scripts\demo-publisher.ps1
+
+# Multi-device: buka 3 PowerShell window paralel:
+.\scripts\demo-publisher.ps1 -DeviceId DEMO-CIFOR-01
+.\scripts\demo-publisher.ps1 -DeviceId DEMO-CIFOR-02 -LoopMin 7
+.\scripts\demo-publisher.ps1 -DeviceId DEMO-CIFOR-03 -LoopMin 15
+
+# Dry run (preview payload tanpa publish)
+.\scripts\demo-publisher.ps1 -DryRun
+```
+
+Skrip pakai `mosquitto_pub.exe` dari install
+`C:\Program Files\mosquitto\` (download di
+[mosquitto.org/download](https://mosquitto.org/download/)). Stop
+dengan `Ctrl+C` di window PowerShell.
+
 ## Format payload
 
 ```json
