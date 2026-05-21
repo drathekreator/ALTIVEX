@@ -145,6 +145,34 @@ Skrip pakai `mosquitto_pub.exe` dari install
 [mosquitto.org/download](https://mosquitto.org/download/)). Stop
 dengan `Ctrl+C` di window PowerShell.
 
+## Quick test tanpa ESP32 (bash, dari VM atau Linux/WSL)
+
+Kalau kamu sudah login di VM, gak perlu pindah ke laptop —
+`scripts/demo-publisher.sh` adalah versi bash dengan logic identik:
+
+```bash
+cd ~/ALTIVEX
+
+# Default — auto-baca password dari .env.demo
+./scripts/demo-publisher.sh
+
+# Custom args via env var
+DEVICE_ID=DEMO-CIFOR-02 LOOP_MIN=5 ./scripts/demo-publisher.sh
+
+# Multi-device dari beberapa SSH session / tmux pane:
+DEVICE_ID=DEMO-CIFOR-01 LOOP_MIN=8  ./scripts/demo-publisher.sh
+DEVICE_ID=DEMO-CIFOR-02 LOOP_MIN=12 ./scripts/demo-publisher.sh
+DEVICE_ID=DEMO-CIFOR-03 LOOP_MIN=15 ./scripts/demo-publisher.sh
+
+# Dry run (preview tanpa publish)
+DRY_RUN=1 ./scripts/demo-publisher.sh
+```
+
+Prerequisite di VM:
+```bash
+sudo apt install mosquitto-clients
+```
+
 ## Format payload
 
 ```json
