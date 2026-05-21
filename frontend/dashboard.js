@@ -294,7 +294,8 @@ const routeColors = {
     'Cibodas':          '#2979FF',
     'Gunung Putri':     '#FF6D00',
     'Selabintana':      '#AA00FF',
-    'Jl. Raya Puncak':  '#F5B700'
+    'Jl. Raya Puncak':  '#F5B700',
+    'Jl. CIFOR Loop':   '#2EC27E'
 };
 
 // ====================================================================
