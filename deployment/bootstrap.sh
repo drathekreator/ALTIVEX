@@ -147,7 +147,12 @@ else
     docker run --rm -v "$PWD/mosquitto/config:/work" -w /work \
         eclipse-mosquitto:2 \
         mosquitto_passwd -b -c passwd "$MQTT_USERNAME" "$MQTT_PASSWORD"
-    chmod 600 "$PASSWD_FILE"
+    # File ke-create dengan owner root + perm 0600 → mosquitto (uid 1883)
+    # di container gak bisa baca. Ubah ownership + perm.
+    if ! chown 1883:1883 "$PASSWD_FILE" 2>/dev/null; then
+        sudo chown 1883:1883 "$PASSWD_FILE"
+    fi
+    chmod 0640 "$PASSWD_FILE"
     echo "✅ mosquitto passwd created."
 fi
 
