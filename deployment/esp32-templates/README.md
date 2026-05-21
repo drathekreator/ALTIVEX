@@ -1,12 +1,13 @@
 # ESP32 firmware templates — ALTIVEX
 
-Dua template firmware untuk node pendaki (Heltec WiFi LoRa V3 atau ESP32
-generic). Pilih satu sesuai kebutuhan deployment.
+Tiga template firmware untuk node pendaki/pengguna demo (Heltec WiFi
+LoRa V3 atau ESP32 generic). Pilih satu sesuai kebutuhan deployment.
 
 | File | Port | Enkripsi | Untuk |
 |---|---|---|---|
-| `altivex_basic_mqtt.ino` | 1883 | ❌ Plaintext | Testing lab / Wi-Fi internal saja. |
+| `altivex_basic_mqtt.ino` | 1883 | ❌ Plaintext | Testing lab / Wi-Fi internal (PROD broker). |
 | `altivex_tls_mqtt.ino`   | 8883 | ✅ TLS (Let's Encrypt) | Produksi di jaringan publik. |
+| `altivex_demo_situgede.ino` | 1885 | ❌ Plaintext | Demo presentation di altivex-demo.duckdns.org dengan **GPS simulator** (loop CIFOR-Situgede 2.71 km). |
 
 ## Otentikasi
 
@@ -80,15 +81,57 @@ Lihat block "Catatan deployment TLS di server" di akhir
 `altivex_tls_mqtt.ino` untuk dua cara setup TLS di sisi broker
 (Mosquitto handle langsung VS reverse stream nginx).
 
+## Quick start (DEMO Situgede dengan GPS simulator)
+
+`altivex_demo_situgede.ino` punya 2 mode:
+
+**Mode 1 — Simulator (default, `SIMULATE_GPS = true`)**
+Tidak butuh GPS hardware. ESP32 generate posisi random di loop
+Situgede berdasarkan waypoint di GEO.json. Ideal untuk demo presentasi.
+
+**Mode 2 — Real GPS (`SIMULATE_GPS = false`)**
+Pakai NEO-6M asli di Serial2, sama seperti basic template tapi konek
+ke broker demo.
+
+1. Ambil credential demo dari VM:
+   ```bash
+   ssh user@vm "grep -E '^(MQTT_USERNAME|MQTT_PASSWORD)=' \
+       ~/ALTIVEX/deployment/demo-branch/.env.demo"
+   ```
+
+2. Edit `altivex_demo_situgede.ino`:
+   ```cpp
+   const char* WIFI_SSID     = "GANTI_SSID_ANDA";
+   const char* WIFI_PASSWORD = "GANTI_PASSWORD_WIFI";
+   const char* MQTT_PASSWORD = "...";  // dari .env.demo
+   const char* DEVICE_ID     = "DEMO-CIFOR-01";
+   ```
+   Catat: `MQTT_HOST` dan `MQTT_PORT` sudah di-set ke
+   `altivex-demo.duckdns.org:1885` — jangan diubah.
+
+3. Compile + upload. Buka Serial Monitor 115200 untuk lihat publish log.
+
+4. Login ke `https://altivex-demo.duckdns.org/`, daftarkan pendaki baru
+   dengan ID Perangkat persis sama dengan `DEVICE_ID` di firmware
+   (mis. `DEMO-CIFOR-01`).
+
+5. Marker akan bergerak smooth di peta mengikuti loop, dengan
+   battery indicator yang turun pelan-pelan dari 100% ke 20%.
+
 ## Format payload
 
 ```json
 {
   "id_perangkat": "ALAT-001",
   "latitude": -6.7711,
-  "longitude": 106.96
+  "longitude": 106.96,
+  "battery": 87
 }
 ```
+
+`battery` adalah persen 0-100 (opsional). Backend akan render indicator
+di dashboard. Out-of-range atau missing → di-treat sebagai null
+("—" di UI).
 
 Backend (Task 3.3 / Bug B8) akan reject:
 - `latitude` di luar `[-90, 90]`
