@@ -729,8 +729,22 @@ function handleHistoryTableClick(ev) {
 async function deletePendaki(id) {
     showConfirm("HAPUS DATA", "Hapus permanen data pendaki ini dari riwayat?", async () => {
         try {
+            // Resolve id_perangkat dulu (sebelum dihapus dari pendakiById)
+            // supaya bisa clear polyline + marker dari peta utama setelah
+            // delete sukses.
+            const p = pendakiById.get(id);
+            const idAlat = p ? p.id_perangkat : null;
+
             const res = await apiFetch(`/api/pendaki/${id}`, { method: "DELETE" });
-            if (res.ok)                    { showToast("Data dihapus", "success"); fetchHistory(); }
+            if (res.ok) {
+                showToast("Data dihapus", "success");
+                if (idAlat) {
+                    clearHistoryPath(idAlat);
+                    clearLiveMarker(idAlat);
+                }
+                fetchHistory();
+                renderHikerCards();
+            }
             else if (res.status === 404)   { showToast("Pendaki tidak ditemukan", "error"); }
             else                           { showToast("Gagal menghapus", "error"); }
         } catch (e) { showToast("Gagal menghapus", "error"); }
@@ -912,7 +926,19 @@ async function selesaikanPendakian(idAlat) {
     showConfirm("KONFIRMASI TURUN", `Apakah pendaki dengan alat ${idAlat} sudah benar-benar kembali ke basecamp?`, async () => {
         try {
             const res = await apiFetch(`/api/pendaki/${idAlat}/selesai`, { method: "PUT" });
-            if (res.ok)                  { showToast("Pendakian diselesaikan", "success"); fetchPendakiAktif(); fetchHistory(); fetchInitialSensorData(); }
+            if (res.ok) {
+                showToast("Pendakian diselesaikan", "success");
+                // Bersihkan polyline history + last-position marker dari peta
+                // utama supaya pendaki yang sudah turun tidak ngeganggu
+                // pantauan map. Kalau alat masih publish data setelah ini,
+                // dia akan muncul lagi sebagai standby device di sidebar.
+                clearHistoryPath(idAlat);
+                clearLiveMarker(idAlat);
+                fetchPendakiAktif();
+                fetchHistory();
+                fetchInitialSensorData();
+                renderHikerCards();  // re-render tanpa pendaki yang turun
+            }
             else if (res.status === 404) { showToast("Pendaki tidak ditemukan", "error"); }
             else                         { showToast("Gagal update status", "error"); }
         } catch (e) { showToast("Gagal update (Koneksi)", "error"); }
@@ -1158,6 +1184,50 @@ async function toggleHistory(id) {
 
     activePolylines[id] = { poly, markers: [startMarker, endMarker] };
     map.fitBounds(poly.getBounds());
+}
+
+/**
+ * Clear polyline history + start/end markers untuk satu alat.
+ * Dipakai saat pendaki "Selesai Pendakian" — tanpa cleanup ini,
+ * polyline biru bertanda nempel di peta utama dan ngeganggu
+ * pantauan map walau pendakiannya sudah selesai.
+ *
+ * Idempotent: aman dipanggil walau alat tidak punya history aktif
+ * di peta.
+ */
+function clearHistoryPath(idPerangkat) {
+    const entry = activePolylines[idPerangkat];
+    if (!entry) return;
+    if (entry.poly) map.removeLayer(entry.poly);
+    if (entry.markers) entry.markers.forEach(m => map.removeLayer(m));
+    delete activePolylines[idPerangkat];
+}
+
+/**
+ * Hapus marker last-position alat dari peta utama. Dipakai saat
+ * pendakian selesai supaya marker tidak terus nempel di koordinat
+ * terakhir pendaki yang sudah turun. Kalau alat masih publish data
+ * (mis. lupa dimatikan / dipakai pendaki lain), tick polling
+ * berikutnya akan recreate marker secara otomatis sebagai standby
+ * device.
+ *
+ * Sekalian flush state lokal `latestDataPerDevice` + `notifiedDevices`
+ * untuk alat itu — supaya kalau alat dipakai lagi nanti, dia mulai
+ * "fresh" tanpa nyangkut pesan low-battery / out-of-bounds dari sesi
+ * sebelumnya.
+ */
+function clearLiveMarker(idPerangkat) {
+    if (activeMarkers[idPerangkat]) {
+        map.removeLayer(activeMarkers[idPerangkat]);
+        delete activeMarkers[idPerangkat];
+    }
+    delete latestDataPerDevice[idPerangkat];
+    if (typeof notifiedDevices !== 'undefined' && notifiedDevices.delete) {
+        notifiedDevices.delete(idPerangkat);
+    }
+    if (typeof notifiedLowBattery !== 'undefined' && notifiedLowBattery.delete) {
+        notifiedLowBattery.delete(idPerangkat);
+    }
 }
 
 let miniMap = null;
