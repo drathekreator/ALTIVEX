@@ -1,8 +1,15 @@
-# Rebuild GEO.json untuk demo altivex-demo.duckdns.org dengan rute walking
-# loop CIFOR -> Jl. CIFOR -> Situ Gede -> kembali ke CIFOR.
+# Rebuild GEO.json untuk demo altivex-demo.duckdns.org dengan rute cycling
+# loop CIFOR -> Cilubang Malang -> Warung Tepi Hutan -> CIFOR.
 #
-# Pakai OSRM foot profile (routing.openstreetmap.de) supaya polyline
-# benar-benar ngikut jalur pejalan kaki di OSM, bukan vektor lurus.
+# Strategi: 3 leg terpisah via OSRM bicycle profile, lalu di-join.
+# Hasilnya jalur ngikutin jalan beraspal (cycling profile menghindari
+# footway hutan, tapi izinkan jalan kampung kecil yang bisa dilewati
+# sepeda — match sama referensi user yang travel_mode cycling).
+#
+# Waypoints sesuai referensi user (situgede_loop_geofence.json):
+#   1. Jalan CIFOR (Start/Finish): 106.7518232, -6.5546282
+#   2. Jl. Cilubang Malang No.37:  106.7457227, -6.5517073
+#   3. Warung Tepi Hutan:          106.7507053, -6.5551558
 #
 # Output: deployment/demo-branch/frontend-override/GEO.json
 
@@ -12,106 +19,121 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Loop waypoints. Urutan match screenshot Google Maps user:
-#   1. CIFOR pintu masuk (Jl. CIFOR)
-#   2. Sisi utara Situ Gede (lewat Penangkaran Rusa)
-#   3. Sisi barat Situ Gede
-#   4. Sisi selatan Situ Gede
-#   5. Balik ke CIFOR via Jl. CIFOR
-$waypointsLng = @(
-    @{ lng = 106.7506; lat = -6.5566; name = 'CIFOR (Center for International Forestry Research)';    role = 'origin'      },
-    @{ lng = 106.7493; lat = -6.5500; name = 'Sisi Utara Situ Gede (Penangkaran Rusa)';                role = 'midpoint'    },
-    @{ lng = 106.7440; lat = -6.5523; name = 'Sisi Barat Situ Gede';                                   role = 'midpoint'    },
-    @{ lng = 106.7460; lat = -6.5570; name = 'Sisi Selatan Situ Gede';                                 role = 'midpoint'    },
-    @{ lng = 106.7506; lat = -6.5566; name = 'CIFOR (kembali)';                                        role = 'destination' }
-)
+$wp1 = @{ lng = 106.7518232; lat = -6.5546282; name = 'Jalan CIFOR (Start / Finish)';  role = 'start_finish' }
+$wp2 = @{ lng = 106.7457227; lat = -6.5517073; name = 'Jl. Cilubang Malang No.37';      role = 'via'          }
+$wp3 = @{ lng = 106.7507053; lat = -6.5551558; name = 'Warung Tepi Hutan';              role = 'via'          }
 
-$wpStr = ($waypointsLng | ForEach-Object { "$($_.lng),$($_.lat)" }) -join ';'
-$url = "https://routing.openstreetmap.de/routed-foot/route/v1/walking/$wpStr" +
-       '?overview=full&geometries=geojson&steps=false'
+function Get-Leg($from, $to, $label) {
+    $url = "https://routing.openstreetmap.de/routed-bike/route/v1/cycling/$($from.lng),$($from.lat);$($to.lng),$($to.lat)?overview=full&geometries=geojson"
+    Write-Host "  Fetching $label..."
+    $r = (Invoke-RestMethod -Uri $url -TimeoutSec 30).routes[0]
+    Write-Host "    -> $([math]::Round($r.distance/1000,2)) km, $($r.geometry.coordinates.Count) points"
+    return $r.geometry.coordinates
+}
 
-Write-Host "Fetching OSRM foot route..."
-Write-Host "  $url"
+Write-Host "OSRM bicycle profile, 3 legs:"
+$leg1 = Get-Leg $wp1 $wp2 "Leg 1 ($($wp1.name) -> $($wp2.name))"
+$leg2 = Get-Leg $wp2 $wp3 "Leg 2 ($($wp2.name) -> $($wp3.name))"
+$leg3 = Get-Leg $wp3 $wp1 "Leg 3 ($($wp3.name) -> $($wp1.name))"
+
+# Join: skip first point of leg 2 dan leg 3 (duplikat dari leg sebelumnya)
+$all = New-Object System.Collections.ArrayList
+foreach ($p in $leg1) { [void]$all.Add(@($p[0], $p[1])) }
+for ($i = 1; $i -lt $leg2.Count; $i++) { [void]$all.Add(@($leg2[$i][0], $leg2[$i][1])) }
+for ($i = 1; $i -lt $leg3.Count; $i++) { [void]$all.Add(@($leg3[$i][0], $leg3[$i][1])) }
+
+# Compute total distance via Haversine
+$totalKm = 0
+for ($i = 1; $i -lt $all.Count; $i++) {
+    $lat1 = $all[$i-1][1] * [math]::PI / 180
+    $lat2 = $all[$i][1] * [math]::PI / 180
+    $dLat = $lat2 - $lat1
+    $dLng = ($all[$i][0] - $all[$i-1][0]) * [math]::PI / 180
+    $a = [math]::Sin($dLat/2)*[math]::Sin($dLat/2) + [math]::Cos($lat1)*[math]::Cos($lat2)*[math]::Sin($dLng/2)*[math]::Sin($dLng/2)
+    $totalKm += 2 * [math]::Asin([math]::Sqrt($a)) * 6371
+}
+$totalKmRounded = [math]::Round($totalKm, 2)
+
 Write-Host ""
+Write-Host "Joined: $($all.Count) points, $totalKmRounded km"
 
-$resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-if ($resp.code -ne 'Ok') {
-    throw "OSRM returned code=$($resp.code) message=$($resp.message)"
-}
+# Build coords block as JSON string
+$coordPairs = $all | ForEach-Object { "[$($_[0]),$($_[1])]" }
+$coordsBlock = ($coordPairs -join ",`n      ")
 
-$route       = $resp.routes[0]
-$coords      = $route.geometry.coordinates
-$distanceKm  = [math]::Round($route.distance / 1000, 2)
-$durationMin = [math]::Round($route.duration / 60, 1)
-
-Write-Host "OSRM result:"
-Write-Host "  Points:   $($coords.Count)"
-Write-Host "  Distance: $distanceKm km"
-Write-Host "  Duration: $durationMin min (walking)"
-Write-Host ""
-
-# Build GeoJSON FeatureCollection
-$features = New-Object System.Collections.ArrayList
-
-# Origin + Destination + intermediate waypoints sebagai Point
-$order = 1
-foreach ($wp in $waypointsLng) {
-    [void]$features.Add([ordered]@{
-        type       = 'Feature'
-        id         = "waypoint-$order"
-        properties = [ordered]@{
-            name  = $wp.name
-            type  = 'waypoint'
-            route = 'Jl. CIFOR Loop'
-            order = $order
-            role  = $wp.role
-        }
-        geometry = [ordered]@{
-            type        = 'Point'
-            coordinates = @([double]$wp.lng, [double]$wp.lat)
-        }
-    })
-    $order++
-}
-
-# Route LineString
-[void]$features.Add([ordered]@{
-    type       = 'Feature'
-    id         = 'route-cifor-situgede'
-    properties = [ordered]@{
-        name         = 'Loop CIFOR - Situ Gede - CIFOR'
-        type         = 'route'
-        route        = 'Jl. CIFOR Loop'
-        from         = 'CIFOR'
-        to           = 'CIFOR (via Situ Gede)'
-        distance_km  = $distanceKm
-        duration_min = $durationMin
-        travel_mode  = 'walking'
+$json = @"
+{
+  "type": "FeatureCollection",
+  "name": "Geofence - Loop Bersepeda Situgede",
+  "metadata": {
+    "description": "Loop bersepeda CIFOR -> Cilubang Malang -> Warung Tepi Hutan -> CIFOR",
+    "source": "OSRM bicycle profile (routing.openstreetmap.de)",
+    "created": "$(Get-Date -Format 'yyyy-MM-dd')",
+    "crs": "EPSG:4326",
+    "travel_mode": "cycling",
+    "route_type": "loop",
+    "distance_km": $totalKmRounded,
+    "point_count": $($all.Count)
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "waypoint_1",
+      "properties": {
+        "name": "$($wp1.name)",
+        "type": "waypoint",
+        "route": "Jl. CIFOR Loop",
+        "order": 1,
+        "role": "$($wp1.role)"
+      },
+      "geometry": { "type": "Point", "coordinates": [$($wp1.lng), $($wp1.lat)] }
+    },
+    {
+      "type": "Feature",
+      "id": "waypoint_2",
+      "properties": {
+        "name": "$($wp2.name)",
+        "type": "waypoint",
+        "route": "Jl. CIFOR Loop",
+        "order": 2,
+        "role": "$($wp2.role)"
+      },
+      "geometry": { "type": "Point", "coordinates": [$($wp2.lng), $($wp2.lat)] }
+    },
+    {
+      "type": "Feature",
+      "id": "waypoint_3",
+      "properties": {
+        "name": "$($wp3.name)",
+        "type": "waypoint",
+        "route": "Jl. CIFOR Loop",
+        "order": 3,
+        "role": "$($wp3.role)"
+      },
+      "geometry": { "type": "Point", "coordinates": [$($wp3.lng), $($wp3.lat)] }
+    },
+    {
+      "type": "Feature",
+      "id": "route_loop",
+      "properties": {
+        "name": "Loop Bersepeda Situgede",
+        "type": "route",
+        "route": "Jl. CIFOR Loop",
+        "travel_mode": "cycling",
+        "distance_km": $totalKmRounded
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+      $coordsBlock
+        ]
+      }
     }
-    geometry = [ordered]@{
-        type        = 'LineString'
-        coordinates = $coords
-    }
-})
-
-$geojson = [ordered]@{
-    type     = 'FeatureCollection'
-    name     = 'Geofence - CIFOR loop (Bogor)'
-    metadata = [ordered]@{
-        description   = 'Walking loop CIFOR -> Situ Gede -> CIFOR via OSRM foot profile'
-        source        = 'routing.openstreetmap.de (OSRM foot)'
-        created       = (Get-Date -Format 'yyyy-MM-dd')
-        crs           = 'EPSG:4326'
-        distance_km   = $distanceKm
-        duration_min  = $durationMin
-        point_count   = $coords.Count
-    }
-    features = $features.ToArray()
+  ]
 }
+"@
 
-$json = $geojson | ConvertTo-Json -Depth 99 -Compress:$false
 $json = $json -replace "`r`n", "`n"
-
 $dir = Split-Path -Parent $Output
 if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
 $outAbs = Join-Path (Get-Location) $Output
@@ -122,4 +144,8 @@ $outAbs = Join-Path (Get-Location) $Output
     [System.Text.UTF8Encoding]::new($false)
 )
 
-Write-Host "Written: $Output ($($coords.Count) points, $([math]::Round((Get-Item $outAbs).Length / 1024, 1)) KB)"
+Write-Host ""
+Write-Host "Written: $Output ($([math]::Round((Get-Item $outAbs).Length/1024,1)) KB)"
+
+# Validate
+try { $null = Get-Content $outAbs -Raw | ConvertFrom-Json; Write-Host "JSON valid: OK" } catch { throw "JSON INVALID: $_" }
