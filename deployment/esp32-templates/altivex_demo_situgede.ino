@@ -44,7 +44,7 @@ const char* WIFI_PASSWORD = "GANTI_PASSWORD_WIFI";
 // MQTT password — ambil dari .env.demo di VM:
 //   ssh user@<vm-ip>
 //   grep MQTT_PASSWORD ~/ALTIVEX/deployment/demo-branch/.env.demo
-const char* MQTT_PASSWORD = "GANTI_DENGAN_MQTT_PASSWORD_DARI_ENV_DEMO";
+const char* MQTT_PASSWORD = "6734d18943409d20a36e1c0eebeb411f";
 
 // Identitas perangkat — UNIK per ESP32 kalau pakai >1 device demo
 const char* DEVICE_ID = "DEMO-CIFOR-01";
