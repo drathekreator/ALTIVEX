@@ -1,744 +1,1817 @@
 {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Cibodas parking",
-                "route": "Cibodas",
-                "type": "Trailhead",
-                "elevation_m": 1341
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9917,
-                    -6.745
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Cibodas trailhead",
-                "route": "Cibodas",
-                "type": "Trailhead",
-                "elevation_m": 1367
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9883,
-                    -6.7533
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Telaga Biru",
-                "route": "Cibodas",
-                "type": "Waypoint",
-                "elevation_m": 1575
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107,
-                    -6.7583
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Waterfall jct. Rawa Panyangcangan",
-                "route": "Cibodas",
-                "type": "Junction",
-                "elevation_m": 1654
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9867,
-                    -6.7633
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Cibeureum waterfall jct.",
-                "route": "Cibodas",
-                "type": "Junction",
-                "elevation_m": 1280
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.985,
-                    -6.765
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Shelter 1 Rawa Denok 1",
-                "route": "Cibodas",
-                "type": "Pos",
-                "elevation_m": 1802
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.98,
-                    -6.7733
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Shelter 2 Rawa Denok 2",
-                "route": "Cibodas",
-                "type": "Pos",
-                "elevation_m": 1896
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9767,
-                    -6.7767
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Shelter 3 Batu Kukus 1",
-                "route": "Cibodas",
-                "type": "Pos",
-                "elevation_m": 1950
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.975,
-                    -6.78
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Shelter 4 Batu Kukus 2",
-                "route": "Cibodas",
-                "type": "Pos",
-                "elevation_m": 2048
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9733,
-                    -6.7833
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Hotspring",
-                "route": "Cibodas",
-                "type": "Waypoint",
-                "elevation_m": 2165
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9683,
-                    -6.7883
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Kandang Batu",
-                "route": "Cibodas",
-                "type": "Pos",
-                "elevation_m": 2181
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9667,
-                    -6.7917
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Kandang Badak campsite",
-                "route": "Cibodas",
-                "type": "Camp",
-                "elevation_m": 2406
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9633,
-                    -6.7967
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Gede-Pangrango junction",
-                "route": "Cibodas",
-                "type": "Junction",
-                "elevation_m": 2441
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9617,
-                    -6.7983
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Water source",
-                "route": "Cibodas",
-                "type": "Water",
-                "elevation_m": 2688
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9567,
-                    -6.7867
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Alun-alun Mandalawangi",
-                "route": "Cibodas",
-                "type": "Camp",
-                "elevation_m": 3008
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9533,
-                    -6.7917
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Pangrango summit",
-                "route": "Cibodas",
-                "type": "Summit",
-                "elevation_m": 3020
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9517,
-                    -6.79
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Gunung Gede summit",
-                "route": "Cibodas",
-                "type": "Summit",
-                "elevation_m": 2962
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9717,
-                    -6.7983
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Jalur Cibodas",
-                "route": "Cibodas",
-                "type": "Route"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        106.9917,
-                        -6.745
-                    ],
-                    [
-                        106.9883,
-                        -6.7533
-                    ],
-                    [
-                        107,
-                        -6.7583
-                    ],
-                    [
-                        106.9867,
-                        -6.7633
-                    ],
-                    [
-                        106.985,
-                        -6.765
-                    ],
-                    [
-                        106.98,
-                        -6.7733
-                    ],
-                    [
-                        106.9767,
-                        -6.7767
-                    ],
-                    [
-                        106.975,
-                        -6.78
-                    ],
-                    [
-                        106.9733,
-                        -6.7833
-                    ],
-                    [
-                        106.9683,
-                        -6.7883
-                    ],
-                    [
-                        106.9667,
-                        -6.7917
-                    ],
-                    [
-                        106.9633,
-                        -6.7967
-                    ],
-                    [
-                        106.9617,
-                        -6.7983
-                    ],
-                    [
-                        106.9567,
-                        -6.7867
-                    ],
-                    [
-                        106.9533,
-                        -6.7917
-                    ],
-                    [
-                        106.9517,
-                        -6.79
-                    ],
-                    [
-                        106.9717,
-                        -6.7983
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Gunung Putri trailhead",
-                "route": "Gunung Putri",
-                "type": "Trailhead",
-                "elevation_m": 1553
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.0167,
-                    -6.7667
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Registration",
-                "route": "Gunung Putri",
-                "type": "Gate",
-                "elevation_m": 1612
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.0083,
-                    -6.77
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "River",
-                "route": "Gunung Putri",
-                "type": "Water",
-                "elevation_m": 1687
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.0133,
-                    -6.775
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Legok Leunca",
-                "route": "Gunung Putri",
-                "type": "Pos",
-                "elevation_m": 2015
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.01,
-                    -6.785
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Buntut Lutung",
-                "route": "Gunung Putri",
-                "type": "Pos",
-                "elevation_m": 2291
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.0067,
-                    -6.7933
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Lawang Sekateng",
-                "route": "Gunung Putri",
-                "type": "Pos",
-                "elevation_m": 2456
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.0017,
-                    -6.7967
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Simpang Maleber",
-                "route": "Gunung Putri",
-                "type": "Pos",
-                "elevation_m": 2640
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9983,
-                    -6.8
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "NE edge of Surya Kencana",
-                "route": "Gunung Putri",
-                "type": "Waypoint",
-                "elevation_m": 2758
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.99,
-                    -6.8033
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Stream and camp",
-                "route": "Gunung Putri",
-                "type": "Camp",
-                "elevation_m": 2724
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9783,
-                    -6.8083
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "SW edge of Surya Kencana",
-                "route": "Gunung Putri",
-                "type": "Waypoint",
-                "elevation_m": 2720
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9767,
-                    -6.8083
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Junction (Gunung Putri)",
-                "route": "Gunung Putri",
-                "type": "Junction",
-                "elevation_m": 1896
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9833,
-                    -6.77
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Jalur Gunung Putri",
-                "route": "Gunung Putri",
-                "type": "Route"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        107.0167,
-                        -6.7667
-                    ],
-                    [
-                        107.0083,
-                        -6.77
-                    ],
-                    [
-                        107.0133,
-                        -6.775
-                    ],
-                    [
-                        107.01,
-                        -6.785
-                    ],
-                    [
-                        107.0067,
-                        -6.7933
-                    ],
-                    [
-                        107.0017,
-                        -6.7967
-                    ],
-                    [
-                        106.9983,
-                        -6.8
-                    ],
-                    [
-                        106.99,
-                        -6.8033
-                    ],
-                    [
-                        106.9783,
-                        -6.8083
-                    ],
-                    [
-                        106.9767,
-                        -6.8083
-                    ],
-                    [
-                        106.9833,
-                        -6.77
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Pondok Halimun carpark",
-                "route": "Selabintana",
-                "type": "Trailhead",
-                "elevation_m": 1111
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.955,
-                    -6.84
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Selabintana office",
-                "route": "Selabintana",
-                "type": "Trailhead",
-                "elevation_m": 1083
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9583,
-                    -6.8383
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Stream",
-                "route": "Selabintana",
-                "type": "Water",
-                "elevation_m": 1097
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9567,
-                    -6.8333
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Kebun",
-                "route": "Selabintana",
-                "type": "Waypoint",
-                "elevation_m": 1362
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.96,
-                    -6.82
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Cigeber",
-                "route": "Selabintana",
-                "type": "Pos",
-                "elevation_m": 1798
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9617,
-                    -6.8167
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Cileutik",
-                "route": "Selabintana",
-                "type": "Waypoint",
-                "elevation_m": 2380
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9667,
-                    -6.8083
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Gunung Geger Bentang",
-                "route": "Selabintana",
-                "type": "Summit",
-                "elevation_m": 2042
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    106.9783,
-                    -6.76
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Jalur Selabintana",
-                "route": "Selabintana",
-                "type": "Route"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        106.955,
-                        -6.84
-                    ],
-                    [
-                        106.9583,
-                        -6.8383
-                    ],
-                    [
-                        106.9567,
-                        -6.8333
-                    ],
-                    [
-                        106.96,
-                        -6.82
-                    ],
-                    [
-                        106.9617,
-                        -6.8167
-                    ],
-                    [
-                        106.9667,
-                        -6.8083
-                    ],
-                    [
-                        106.9783,
-                        -6.76
-                    ]
-                ]
-            }
-        }
-    ]
+    "type":  "FeatureCollection",
+    "features":  [
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Jalur Cibodas",
+                                            "type":  "route",
+                                            "route":  "Cibodas"
+                                        },
+                         "geometry":  {
+                                          "type":  "LineString",
+                                          "coordinates":  [
+                                                              [
+                                                                  106.98329914605054,
+                                                                  -6.790086582030089
+                                                              ],
+                                                              [
+                                                                  106.9833447200499,
+                                                                  -6.790129220656616
+                                                              ],
+                                                              [
+                                                                  106.98314633911151,
+                                                                  -6.789934681892315
+                                                              ],
+                                                              [
+                                                                  106.98287557593882,
+                                                                  -6.789995974936129
+                                                              ],
+                                                              [
+                                                                  106.98229651806463,
+                                                                  -6.790019959168548
+                                                              ],
+                                                              [
+                                                                  106.98127415999018,
+                                                                  -6.789793342678768
+                                                              ],
+                                                              [
+                                                                  106.98040021153182,
+                                                                  -6.789268353959914
+                                                              ],
+                                                              [
+                                                                  106.97967138362148,
+                                                                  -6.788690136074519
+                                                              ],
+                                                              [
+                                                                  106.97945691774214,
+                                                                  -6.788455622880524
+                                                              ],
+                                                              [
+                                                                  106.97919419703993,
+                                                                  -6.788023905110984
+                                                              ],
+                                                              [
+                                                                  106.97872588823564,
+                                                                  -6.787530232882964
+                                                              ],
+                                                              [
+                                                                  106.97851142235626,
+                                                                  -6.78702389621467
+                                                              ],
+                                                              [
+                                                                  106.9782165317722,
+                                                                  -6.786357662945092
+                                                              ],
+                                                              [
+                                                                  106.9780127891868,
+                                                                  -6.786101829124615
+                                                              ],
+                                                              [
+                                                                  106.97740577032246,
+                                                                  -6.785810152758613
+                                                              ],
+                                                              [
+                                                                  106.97706262491553,
+                                                                  -6.785453050940535
+                                                              ],
+                                                              [
+                                                                  106.97654790680507,
+                                                                  -6.785053309785317
+                                                              ],
+                                                              [
+                                                                  106.97573293646354,
+                                                                  -6.7846322487429305
+                                                              ],
+                                                              [
+                                                                  106.97550238564328,
+                                                                  -6.784200527545122
+                                                              ],
+                                                              [
+                                                                  106.975261111529,
+                                                                  -6.784157888393447
+                                                              ],
+                                                              [
+                                                                  106.975261111529,
+                                                                  -6.784035300811453
+                                                              ],
+                                                              [
+                                                                  106.97513243200139,
+                                                                  -6.783465001650107
+                                                              ],
+                                                              [
+                                                                  106.97533081293979,
+                                                                  -6.783086578469463
+                                                              ],
+                                                              [
+                                                                  106.9753629828217,
+                                                                  -6.782692165260585
+                                                              ],
+                                                              [
+                                                                  106.97518068682426,
+                                                                  -6.782228462831713
+                                                              ],
+                                                              [
+                                                                  106.97536834446869,
+                                                                  -6.781711460746876
+                                                              ],
+                                                              [
+                                                                  106.97507264473909,
+                                                                  -6.780482670666806
+                                                              ],
+                                                              [
+                                                                  106.97515306944388,
+                                                                  -6.780130894838135
+                                                              ],
+                                                              [
+                                                                  106.97540995742122,
+                                                                  -6.77928052415816
+                                                              ],
+                                                              [
+                                                                  106.97530272448155,
+                                                                  -6.778736869140522
+                                                              ],
+                                                              [
+                                                                  106.97546357389106,
+                                                                  -6.778267832946309
+                                                              ],
+                                                              [
+                                                                  106.97524910801172,
+                                                                  -6.776977981059207
+                                                              ],
+                                                              [
+                                                                  106.97599973858945,
+                                                                  -6.776690162398602
+                                                              ],
+                                                              [
+                                                                  106.9762142044688,
+                                                                  -6.776391683606136
+                                                              ],
+                                                              [
+                                                                  106.97676109246113,
+                                                                  -6.776221124213183
+                                                              ],
+                                                              [
+                                                                  106.9771369952118,
+                                                                  -6.7756364292451225
+                                                              ],
+                                                              [
+                                                                  106.9771477185057,
+                                                                  -6.775337949800414
+                                                              ],
+                                                              [
+                                                                  106.97700831568415,
+                                                                  -6.774826270322528
+                                                              ],
+                                                              [
+                                                                  106.97680457309879,
+                                                                  -6.774740990356767
+                                                              ],
+                                                              [
+                                                                  106.97667589357116,
+                                                                  -6.774517130374928
+                                                              ],
+                                                              [
+                                                                  106.97657938392547,
+                                                                  -6.7741013901330005
+                                                              ],
+                                                              [
+                                                                  106.97643998110387,
+                                                                  -6.7734724490859115
+                                                              ],
+                                                              [
+                                                                  106.97689035945052,
+                                                                  -6.772161264266392
+                                                              ],
+                                                              [
+                                                                  106.97719061168159,
+                                                                  -6.772097303940149
+                                                              ],
+                                                              [
+                                                                  106.97766243661617,
+                                                                  -6.771564300891669
+                                                              ],
+                                                              [
+                                                                  106.97789834908345,
+                                                                  -6.771223178631693
+                                                              ],
+                                                              [
+                                                                  106.97789834908345,
+                                                                  -6.770892716212343
+                                                              ],
+                                                              [
+                                                                  106.97814498484472,
+                                                                  -6.770732814960452
+                                                              ],
+                                                              [
+                                                                  106.9788862665673,
+                                                                  -6.770011244793062
+                                                              ],
+                                                              [
+                                                                  106.9790900091527,
+                                                                  -6.769467579327543
+                                                              ],
+                                                              [
+                                                                  106.97934736820791,
+                                                                  -6.76914777582648
+                                                              ],
+                                                              [
+                                                                  106.97947664073936,
+                                                                  -6.768072177509476
+                                                              ],
+                                                              [
+                                                                  106.97992701908598,
+                                                                  -6.76774171293283
+                                                              ],
+                                                              [
+                                                                  106.98044173719644,
+                                                                  -6.767485869234313
+                                                              ],
+                                                              [
+                                                                  106.98106368824655,
+                                                                  -6.767507189547676
+                                                              ],
+                                                              [
+                                                                  106.9815033432992,
+                                                                  -6.767027482268727
+                                                              ],
+                                                              [
+                                                                  106.98181431882429,
+                                                                  -6.766878239906958
+                                                              ],
+                                                              [
+                                                                  106.98195372164584,
+                                                                  -6.7666437161024025
+                                                              ],
+                                                              [
+                                                                  106.98231831364072,
+                                                                  -6.766483813443092
+                                                              ],
+                                                              [
+                                                                  106.98238265340453,
+                                                                  -6.7662386292626255
+                                                              ],
+                                                              [
+                                                                  106.98302605104259,
+                                                                  -6.765641658563618
+                                                              ],
+                                                              [
+                                                                  106.9831761771581,
+                                                                  -6.765066007547857
+                                                              ],
+                                                              [
+                                                                  106.98300460445464,
+                                                                  -6.76486346350879
+                                                              ],
+                                                              [
+                                                                  106.98306894421846,
+                                                                  -6.7644903558460605
+                                                              ],
+                                                              [
+                                                                  106.98285447833908,
+                                                                  -6.764532996736366
+                                                              ],
+                                                              [
+                                                                  106.98282230845719,
+                                                                  -6.764191869508365
+                                                              ],
+                                                              [
+                                                                  106.98245771646228,
+                                                                  -6.76409592743207
+                                                              ],
+                                                              [
+                                                                  106.98312256068827,
+                                                                  -6.763573575793592
+                                                              ],
+                                                              [
+                                                                  106.98349787597712,
+                                                                  -6.763008582569184
+                                                              ],
+                                                              [
+                                                                  106.9841627202031,
+                                                                  -6.762880659483256
+                                                              ],
+                                                              [
+                                                                  106.98447369572817,
+                                                                  -6.762592832416075
+                                                              ],
+                                                              [
+                                                                  106.98491335078083,
+                                                                  -6.762539531088538
+                                                              ],
+                                                              [
+                                                                  106.9853101126576,
+                                                                  -6.761974536654959
+                                                              ],
+                                                              [
+                                                                  106.98564253477062,
+                                                                  -6.7611003930221445
+                                                              ],
+                                                              [
+                                                                  106.98550313194905,
+                                                                  -6.760737942759434
+                                                              ],
+                                                              [
+                                                                  106.98583555406199,
+                                                                  -6.760130304944527
+                                                              ],
+                                                              [
+                                                                  106.98571759782837,
+                                                                  -6.759938419160068
+                                                              ],
+                                                              [
+                                                                  106.98534228253953,
+                                                                  -6.760268889074804
+                                                              ],
+                                                              [
+                                                                  106.98527794277574,
+                                                                  -6.760130304944527
+                                                              ],
+                                                              [
+                                                                  106.98687783065607,
+                                                                  -6.757675527155137
+                                                              ],
+                                                              [
+                                                                  106.98668481136467,
+                                                                  -6.756993262777967
+                                                              ],
+                                                              [
+                                                                  106.98730676241478,
+                                                                  -6.756183072579872
+                                                              ],
+                                                              [
+                                                                  106.98741399535443,
+                                                                  -6.7539230611702115
+                                                              ],
+                                                              [
+                                                                  106.98842198498738,
+                                                                  -6.7532621124418295
+                                                              ],
+                                                              [
+                                                                  106.98962299391171,
+                                                                  -6.751556434132809
+                                                              ],
+                                                              [
+                                                                  106.98870079063052,
+                                                                  -6.751172655684798
+                                                              ],
+                                                              [
+                                                                  106.98927984850476,
+                                                                  -6.750319813599731
+                                                              ],
+                                                              [
+                                                                  106.99043796425323,
+                                                                  -6.74904054765491
+                                                              ],
+                                                              [
+                                                                  106.99110280847921,
+                                                                  -6.748592803775624
+                                                              ],
+                                                              [
+                                                                  106.99198574311286,
+                                                                  -6.748449192253474
+                                                              ],
+                                                              [
+                                                                  106.99269348051473,
+                                                                  -6.748257301835813
+                                                              ],
+                                                              [
+                                                                  106.99425908143394,
+                                                                  -6.748321265316798
+                                                              ],
+                                                              [
+                                                                  106.99507405177543,
+                                                                  -6.747447097011887
+                                                              ],
+                                                              [
+                                                                  106.99582468235317,
+                                                                  -6.747425775813985
+                                                              ],
+                                                              [
+                                                                  106.99640374022738,
+                                                                  -6.747041994091581
+                                                              ],
+                                                              [
+                                                                  106.99777632185521,
+                                                                  -6.74554950672467
+                                                              ],
+                                                              [
+                                                                  106.99917035007095,
+                                                                  -6.7440143720641945
+                                                              ],
+                                                              [
+                                                                  106.99923468983475,
+                                                                  -6.743694551731013
+                                                              ],
+                                                              [
+                                                                  107.00069305781433,
+                                                                  -6.7432468029099475
+                                                              ],
+                                                              [
+                                                                  107.00197985309043,
+                                                                  -6.74198883972254
+                                                              ],
+                                                              [
+                                                                  107.00174394062316,
+                                                                  -6.741519767867744
+                                                              ],
+                                                              [
+                                                                  107.00212997920596,
+                                                                  -6.74115730294176
+                                                              ],
+                                                              [
+                                                                  107.00270448767697,
+                                                                  -6.740359399113464
+                                                              ],
+                                                              [
+                                                                  107.0032942688452,
+                                                                  -6.7401675054917884
+                                                              ],
+                                                              [
+                                                                  107.00338005519693,
+                                                                  -6.740071558652447
+                                                              ],
+                                                              [
+                                                                  107.00288678367443,
+                                                                  -6.739602484942395
+                                                              ],
+                                                              [
+                                                                  107.00546197034912,
+                                                                  -6.738287253167098
+                                                              ],
+                                                              [
+                                                                  107.00709191103218,
+                                                                  -6.734619924030034
+                                                              ],
+                                                              [
+                                                                  107.00973081675636,
+                                                                  -6.732893732927138
+                                                              ],
+                                                              [
+                                                                  107.01292635835865,
+                                                                  -6.730015276334272
+                                                              ],
+                                                              [
+                                                                  107.01824511216643,
+                                                                  -6.726731682792588
+                                                              ],
+                                                              [
+                                                                  107.02277034222067,
+                                                                  -6.724258311961876
+                                                              ],
+                                                              [
+                                                                  107.02234141046196,
+                                                                  -6.723426744802944
+                                                              ],
+                                                              [
+                                                                  107.0218052457636,
+                                                                  -6.723085588633817
+                                                              ],
+                                                              [
+                                                                  107.02051631123992,
+                                                                  -6.722961287359737
+                                                              ],
+                                                              [
+                                                                  107.02070933053133,
+                                                                  -6.7219804617889265
+                                                              ],
+                                                              [
+                                                                  107.01989436018982,
+                                                                  -6.72262013086394
+                                                              ],
+                                                              [
+                                                                  107.01935819549142,
+                                                                  -6.722598808574995
+                                                              ],
+                                                              [
+                                                                  107.01901505008449,
+                                                                  -6.723217154574474
+                                                              ],
+                                                              [
+                                                                  107.01704730657141,
+                                                                  -6.723687434652949
+                                                              ],
+                                                              [
+                                                                  107.0156961715315,
+                                                                  -6.724113879298863
+                                                              ],
+                                                              [
+                                                                  107.01415201720023,
+                                                                  -6.724945445281994
+                                                              ],
+                                                              [
+                                                                  107.01385013559404,
+                                                                  -6.725392226981213
+                                                              ],
+                                                              [
+                                                                  107.013528436775,
+                                                                  -6.725093716553678
+                                                              ],
+                                                              [
+                                                                  107.01286359254902,
+                                                                  -6.725605448602915
+                                                              ],
+                                                              [
+                                                                  107.01294937890076,
+                                                                  -6.72650097839207
+                                                              ],
+                                                              [
+                                                                  107.01234887443862,
+                                                                  -6.726650233196449
+                                                              ],
+                                                              [
+                                                                  107.01217730173514,
+                                                                  -6.726202468645772
+                                                              ],
+                                                              [
+                                                                  107.01149101092123,
+                                                                  -6.726138502247697
+                                                              ],
+                                                              [
+                                                                  107.01119075869012,
+                                                                  -6.72577602583285
+                                                              ],
+                                                              [
+                                                                  107.01063314740381,
+                                                                  -6.725008427826418
+                                                              ],
+                                                              [
+                                                                  107.01003264294164,
+                                                                  -6.725328260476475
+                                                              ],
+                                                              [
+                                                                  107.0057821395507,
+                                                                  -6.726862822557848
+                                                              ],
+                                                              [
+                                                                  107.00479442158213,
+                                                                  -6.727288742043116
+                                                              ],
+                                                              [
+                                                                  107.00380787853716,
+                                                                  -6.727544606979038
+                                                              ],
+                                                              [
+                                                                  107.00297136185004,
+                                                                  -6.728887871384749
+                                                              ],
+                                                              [
+                                                                  107.0042145157678,
+                                                                  -6.729598155487983
+                                                              ],
+                                                              [
+                                                                  107.00374269083326,
+                                                                  -6.729981951016194
+                                                              ],
+                                                              [
+                                                                  107.003817753891,
+                                                                  -6.730824167917527
+                                                              ],
+                                                              [
+                                                                  107.00433247200144,
+                                                                  -6.731570434837078
+                                                              ],
+                                                              [
+                                                                  107.00496514634551,
+                                                                  -6.731847619400698
+                                                              ],
+                                                              [
+                                                                  107.00369979765736,
+                                                                  -6.732487275481913
+                                                              ],
+                                                              [
+                                                                  107.00242372567527,
+                                                                  -6.732647189370516
+                                                              ],
+                                                              [
+                                                                  107.00007542405407,
+                                                                  -6.732656550449013
+                                                              ],
+                                                              [
+                                                                  106.99831680384344,
+                                                                  -6.732752498755036
+                                                              ],
+                                                              [
+                                                                  106.9970192852734,
+                                                                  -6.732645889524991
+                                                              ],
+                                                              [
+                                                                  106.99237863172168,
+                                                                  -6.7311919796657165
+                                                              ],
+                                                              [
+                                                                  106.99001950704887,
+                                                                  -6.731959567898801
+                                                              ],
+                                                              [
+                                                                  106.98675962568278,
+                                                                  -6.7332388789231885
+                                                              ],
+                                                              [
+                                                                  106.98621796322894,
+                                                                  -6.734190973963746
+                                                              ],
+                                                              [
+                                                                  106.98634664275652,
+                                                                  -6.734724018182739
+                                                              ],
+                                                              [
+                                                                  106.98638953593242,
+                                                                  -6.738433989722653
+                                                              ],
+                                                              [
+                                                                  106.98658255522379,
+                                                                  -6.740054428156728
+                                                              ],
+                                                              [
+                                                                  106.98524774587862,
+                                                                  -6.74418708083501
+                                                              ],
+                                                              [
+                                                                  106.98339156791238,
+                                                                  -6.746028256438232
+                                                              ],
+                                                              [
+                                                                  106.9818958266808,
+                                                                  -6.747002303557473
+                                                              ],
+                                                              [
+                                                                  106.9797940610632,
+                                                                  -6.747002303557473
+                                                              ],
+                                                              [
+                                                                  106.97897909072165,
+                                                                  -6.747386085311339
+                                                              ],
+                                                              [
+                                                                  106.97726336368689,
+                                                                  -6.74870799791318
+                                                              ],
+                                                              [
+                                                                  106.97559052982798,
+                                                                  -6.749091778315184
+                                                              ],
+                                                              [
+                                                                  106.97301341450516,
+                                                                  -6.751691077843828
+                                                              ],
+                                                              [
+                                                                  106.96915302867697,
+                                                                  -6.753567323130967
+                                                              ],
+                                                              [
+                                                                  106.96726204898944,
+                                                                  -6.756207661068979
+                                                              ],
+                                                              [
+                                                                  106.96584657418576,
+                                                                  -6.758638227467414
+                                                              ],
+                                                              [
+                                                                  106.96571789465817,
+                                                                  -6.761836322532157
+                                                              ],
+                                                              [
+                                                                  106.9656321748115,
+                                                                  -6.76383666135939
+                                                              ],
+                                                              [
+                                                                  106.96430248635956,
+                                                                  -6.766352470852548
+                                                              ],
+                                                              [
+                                                                  106.96434537953544,
+                                                                  -6.769038829231531
+                                                              ],
+                                                              [
+                                                                  106.96353040919391,
+                                                                  -6.769976919112219
+                                                              ],
+                                                              [
+                                                                  106.96486009764587,
+                                                                  -6.77117084905058
+                                                              ],
+                                                              [
+                                                                  106.966450027041,
+                                                                  -6.772574114197789
+                                                              ],
+                                                              [
+                                                                  106.96765103596535,
+                                                                  -6.773341636794619
+                                                              ],
+                                                              [
+                                                                  106.96838021995511,
+                                                                  -6.774237078280851
+                                                              ],
+                                                              [
+                                                                  106.9676939291412,
+                                                                  -6.774876678324687
+                                                              ],
+                                                              [
+                                                                  106.96919519029665,
+                                                                  -6.775558917436536
+                                                              ],
+                                                              [
+                                                                  106.97052487874858,
+                                                                  -6.776369075128306
+                                                              ],
+                                                              [
+                                                                  106.97125406273837,
+                                                                  -6.777221871227972
+                                                              ],
+                                                              [
+                                                                  106.9720690330799,
+                                                                  -6.778159945195392
+                                                              ],
+                                                              [
+                                                                  106.97339872153184,
+                                                                  -6.778628981494576
+                                                              ],
+                                                              [
+                                                                  106.97494287586315,
+                                                                  -6.778074665819242
+                                                              ]
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Jalur Gunung Putri",
+                                            "type":  "route",
+                                            "route":  "Gunung Putri"
+                                        },
+                         "geometry":  {
+                                          "type":  "LineString",
+                                          "coordinates":  [
+                                                              [
+                                                                  107.0077982352005,
+                                                                  -6.758168498537997
+                                                              ],
+                                                              [
+                                                                  107.00739075002974,
+                                                                  -6.758712176720023
+                                                              ],
+                                                              [
+                                                                  107.00580370252256,
+                                                                  -6.760385848853832
+                                                              ],
+                                                              [
+                                                                  107.00576080934671,
+                                                                  -6.760961505445769
+                                                              ],
+                                                              [
+                                                                  107.00549272699749,
+                                                                  -6.761153390824083
+                                                              ],
+                                                              [
+                                                                  107.00558923664322,
+                                                                  -6.761888950735041
+                                                              ],
+                                                              [
+                                                                  107.00429171807319,
+                                                                  -6.763200163451535
+                                                              ],
+                                                              [
+                                                                  107.00369142975258,
+                                                                  -6.764151730931466
+                                                              ],
+                                                              [
+                                                                  107.0040560217475,
+                                                                  -6.7642689934529905
+                                                              ],
+                                                              [
+                                                                  107.00423831774495,
+                                                                  -6.764642101286706
+                                                              ],
+                                                              [
+                                                                  107.00412036151128,
+                                                                  -6.764951247559182
+                                                              ],
+                                                              [
+                                                                  107.00379866269229,
+                                                                  -6.765121810935169
+                                                              ],
+                                                              [
+                                                                  107.0036056434009,
+                                                                  -6.7651644517697385
+                                                              ],
+                                                              [
+                                                                  107.00345514042303,
+                                                                  -6.765824072320674
+                                                              ],
+                                                              [
+                                                                  107.00349803359894,
+                                                                  -6.766229159508213
+                                                              ],
+                                                              [
+                                                                  107.00333718418943,
+                                                                  -6.766602265827654
+                                                              ],
+                                                              [
+                                                                  107.00302620866438,
+                                                                  -6.766474343693436
+                                                              ],
+                                                              [
+                                                                  107.00259727690566,
+                                                                  -6.766730187927954
+                                                              ],
+                                                              [
+                                                                  107.00218979173489,
+                                                                  -6.766676887056953
+                                                              ],
+                                                              [
+                                                                  107.0019646025616,
+                                                                  -6.76693273118412
+                                                              ],
+                                                              [
+                                                                  107.00180375315207,
+                                                                  -6.7670926336947845
+                                                              ],
+                                                              [
+                                                                  107.00177158327021,
+                                                                  -6.767359137761567
+                                                              ],
+                                                              [
+                                                                  107.00157856397877,
+                                                                  -6.767380458080515
+                                                              ],
+                                                              [
+                                                                  107.00107456916228,
+                                                                  -6.768020067212328
+                                                              ],
+                                                              [
+                                                                  107.00084937998896,
+                                                                  -6.768084028078909
+                                                              ],
+                                                              [
+                                                                  107.0007743169312,
+                                                                  -6.768339871460477
+                                                              ],
+                                                              [
+                                                                  107.00065636069758,
+                                                                  -6.768638355234264
+                                                              ],
+                                                              [
+                                                                  107.00004513294142,
+                                                                  -6.769022119815107
+                                                              ],
+                                                              [
+                                                                  106.99960547788876,
+                                                                  -6.769118060912658
+                                                              ],
+                                                              [
+                                                                  106.99909075977835,
+                                                                  -6.769512485224382
+                                                              ],
+                                                              [
+                                                                  106.9986403814317,
+                                                                  -6.76988558900644
+                                                              ],
+                                                              [
+                                                                  106.99812566332129,
+                                                                  -6.77024803240428
+                                                              ],
+                                                              [
+                                                                  106.99716056686421,
+                                                                  -6.770621135617718
+                                                              ],
+                                                              [
+                                                                  106.99676380498744,
+                                                                  -6.771314040820247
+                                                              ],
+                                                              [
+                                                                  106.99589521817606,
+                                                                  -6.77234806673372
+                                                              ],
+                                                              [
+                                                                  106.9954877330053,
+                                                                  -6.772625227942171
+                                                              ],
+                                                              [
+                                                                  106.9951982040682,
+                                                                  -6.773104929657477
+                                                              ],
+                                                              [
+                                                                  106.99447355839746,
+                                                                  -6.773781729394214
+                                                              ],
+                                                              [
+                                                                  106.99361569488008,
+                                                                  -6.775060929841389
+                                                              ],
+                                                              [
+                                                                  106.99340122900074,
+                                                                  -6.77608428775628
+                                                              ],
+                                                              [
+                                                                  106.99303663700583,
+                                                                  -6.776723885350198
+                                                              ],
+                                                              [
+                                                                  106.99305808359377,
+                                                                  -6.777427441723604
+                                                              ],
+                                                              [
+                                                                  106.992650598423,
+                                                                  -6.777853839025968
+                                                              ],
+                                                              [
+                                                                  106.992650598423,
+                                                                  -6.7787492721333225
+                                                              ],
+                                                              [
+                                                                  106.99215732690054,
+                                                                  -6.779239627653935
+                                                              ],
+                                                              [
+                                                                  106.99200720078498,
+                                                                  -6.779943180355581
+                                                              ],
+                                                              [
+                                                                  106.99198575419703,
+                                                                  -6.780497493881942
+                                                              ],
+                                                              [
+                                                                  106.99177128831771,
+                                                                  -6.781030487056009
+                                                              ],
+                                                              [
+                                                                  106.99226407213607,
+                                                                  -6.781924821044616
+                                                              ],
+                                                              [
+                                                                  106.99196381990498,
+                                                                  -6.782287255393473
+                                                              ],
+                                                              [
+                                                                  106.9915992279101,
+                                                                  -6.783161360642462
+                                                              ],
+                                                              [
+                                                                  106.99142765520662,
+                                                                  -6.784078103467747
+                                                              ],
+                                                              [
+                                                                  106.99129958530912,
+                                                                  -6.784457227834303
+                                                              ],
+                                                              [
+                                                                  106.99136392507297,
+                                                                  -6.784659763645147
+                                                              ],
+                                                              [
+                                                                  106.99118162907551,
+                                                                  -6.785000876397133
+                                                              ],
+                                                              [
+                                                                  106.99109584272378,
+                                                                  -6.785437926757525
+                                                              ],
+                                                              [
+                                                                  106.99155694436438,
+                                                                  -6.785960254716722
+                                                              ],
+                                                              [
+                                                                  106.99190008977133,
+                                                                  -6.786248067839853
+                                                              ],
+                                                              [
+                                                                  106.9928330163465,
+                                                                  -6.787473936622457
+                                                              ],
+                                                              [
+                                                                  106.99314207430763,
+                                                                  -6.789706257571565
+                                                              ],
+                                                              [
+                                                                  106.99243433690579,
+                                                                  -6.791497078048688
+                                                              ],
+                                                              [
+                                                                  106.99106192154069,
+                                                                  -6.79328023952423
+                                                              ],
+                                                              [
+                                                                  106.98928185474215,
+                                                                  -6.794495430832464
+                                                              ],
+                                                              [
+                                                                  106.98627933243128,
+                                                                  -6.795454790222575
+                                                              ],
+                                                              [
+                                                                  106.9849067508035,
+                                                                  -6.795731938134449
+                                                              ]
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Jalur Selabintana",
+                                            "type":  "route",
+                                            "route":  "Selabintana"
+                                        },
+                         "geometry":  {
+                                          "type":  "LineString",
+                                          "coordinates":  [
+                                                              [
+                                                                  106.96132314531152,
+                                                                  -6.847117838304554
+                                                              ],
+                                                              [
+                                                                  106.96117301919598,
+                                                                  -6.846425042551005
+                                                              ],
+                                                              [
+                                                                  106.96132314531152,
+                                                                  -6.845433809954675
+                                                              ],
+                                                              [
+                                                                  106.96192386037319,
+                                                                  -6.8446896810054945
+                                                              ],
+                                                              [
+                                                                  106.96258870459917,
+                                                                  -6.843677127875108
+                                                              ],
+                                                              [
+                                                                  106.9632642721191,
+                                                                  -6.8430589364870364
+                                                              ],
+                                                              [
+                                                                  106.96333205693078,
+                                                                  -6.842366613733863
+                                                              ],
+                                                              [
+                                                                  106.96343928987046,
+                                                                  -6.8415139334074935
+                                                              ],
+                                                              [
+                                                                  106.96380388186535,
+                                                                  -6.839296957434243
+                                                              ],
+                                                              [
+                                                                  106.96423281362406,
+                                                                  -6.83835900296347
+                                                              ],
+                                                              [
+                                                                  106.96423281362406,
+                                                                  -6.837122605620461
+                                                              ],
+                                                              [
+                                                                  106.9647987284435,
+                                                                  -6.836426048360802
+                                                              ],
+                                                              [
+                                                                  106.96533489314186,
+                                                                  -6.834891203592543
+                                                              ],
+                                                              [
+                                                                  106.96544212608156,
+                                                                  -6.833825336270611
+                                                              ],
+                                                              [
+                                                                  106.96552791243329,
+                                                                  -6.8333563538961295
+                                                              ],
+                                                              [
+                                                                  106.96572093172466,
+                                                                  -6.83218389594751
+                                                              ],
+                                                              [
+                                                                  106.96634288277478,
+                                                                  -6.830926165134073
+                                                              ],
+                                                              [
+                                                                  106.96662168841796,
+                                                                  -6.830691672582705
+                                                              ],
+                                                              [
+                                                                  106.96664313500591,
+                                                                  -6.830158734538451
+                                                              ],
+                                                              [
+                                                                  106.96756533828709,
+                                                                  -6.828346740747032
+                                                              ],
+                                                              [
+                                                                  106.96758678487504,
+                                                                  -6.827621941309028
+                                                              ],
+                                                              [
+                                                                  106.96677181453352,
+                                                                  -6.827046364502642
+                                                              ],
+                                                              [
+                                                                  106.9664715623024,
+                                                                  -6.826428151606233
+                                                              ],
+                                                              [
+                                                                  106.96660024183001,
+                                                                  -6.825511489634885
+                                                              ],
+                                                              [
+                                                                  106.96617131007135,
+                                                                  -6.824999863585254
+                                                              ],
+                                                              [
+                                                                  106.96625709642305,
+                                                                  -6.823997927654177
+                                                              ],
+                                                              [
+                                                                  106.96696483382489,
+                                                                  -6.822889400351157
+                                                              ],
+                                                              [
+                                                                  106.9673294258198,
+                                                                  -6.822676221729448
+                                                              ],
+                                                              [
+                                                                  106.96825162910098,
+                                                                  -6.820352568598791
+                                                              ],
+                                                              [
+                                                                  106.96812294957338,
+                                                                  -6.818455265481923
+                                                              ],
+                                                              [
+                                                                  106.96782436551206,
+                                                                  -6.817786473051131
+                                                              ],
+                                                              [
+                                                                  106.9679423217457,
+                                                                  -6.8167525448371995
+                                                              ],
+                                                              [
+                                                                  106.96795304503966,
+                                                                  -6.816230250355427
+                                                              ],
+                                                              [
+                                                                  106.96889669490878,
+                                                                  -6.8140024981146645
+                                                              ],
+                                                              [
+                                                                  106.96897175796654,
+                                                                  -6.813533496323952
+                                                              ],
+                                                              [
+                                                                  106.96919694713986,
+                                                                  -6.813799974670428
+                                                              ],
+                                                              [
+                                                                  106.96954009254685,
+                                                                  -6.813544155460655
+                                                              ],
+                                                              [
+                                                                  106.96962587889857,
+                                                                  -6.813288336114423
+                                                              ],
+                                                              [
+                                                                  106.96984034477791,
+                                                                  -6.813224381256559
+                                                              ],
+                                                              [
+                                                                  106.96985106807189,
+                                                                  -6.813064494074539
+                                                              ],
+                                                              [
+                                                                  106.96963660219257,
+                                                                  -6.8124569222967635
+                                                              ],
+                                                              [
+                                                                  106.96976528172014,
+                                                                  -6.8121051698631065
+                                                              ],
+                                                              [
+                                                                  106.97010842712712,
+                                                                  -6.811806713050424
+                                                              ],
+                                                              [
+                                                                  106.97123116412224,
+                                                                  -6.810755450595331
+                                                              ],
+                                                              [
+                                                                  106.97148852317748,
+                                                                  -6.8104996297617575
+                                                              ],
+                                                              [
+                                                                  106.97176732882065,
+                                                                  -6.809817440205279
+                                                              ],
+                                                              [
+                                                                  106.97211047422759,
+                                                                  -6.809412389697156
+                                                              ],
+                                                              [
+                                                                  106.97208902763967,
+                                                                  -6.808303828663438
+                                                              ],
+                                                              [
+                                                                  106.97189600834824,
+                                                                  -6.8077069101230085
+                                                              ],
+                                                              [
+                                                                  106.97213192081551,
+                                                                  -6.8073658134809
+                                                              ],
+                                                              [
+                                                                  106.97337582291574,
+                                                                  -6.805702963879487
+                                                              ],
+                                                              [
+                                                                  106.97393343420202,
+                                                                  -6.805127360752395
+                                                              ],
+                                                              [
+                                                                  106.97468406477977,
+                                                                  -6.804764943614665
+                                                              ],
+                                                              [
+                                                                  106.97532746241778,
+                                                                  -6.8036563718482785
+                                                              ],
+                                                              [
+                                                                  106.97567060782474,
+                                                                  -6.8035284595566825
+                                                              ],
+                                                              [
+                                                                  106.97569205441269,
+                                                                  -6.803102085005411
+                                                              ],
+                                                              [
+                                                                  106.97614908326997,
+                                                                  -6.802358440969462
+                                                              ],
+                                                              [
+                                                                  106.97608474350616,
+                                                                  -6.801932065379497
+                                                              ],
+                                                              [
+                                                                  106.97636354914935,
+                                                                  -6.801782833833611
+                                                              ],
+                                                              [
+                                                                  106.97614908326997,
+                                                                  -6.801590964635072
+                                                              ],
+                                                              [
+                                                                  106.97668524796836,
+                                                                  -6.801356457732774
+                                                              ],
+                                                              [
+                                                                  106.9773509567607,
+                                                                  -6.800611744064823
+                                                              ],
+                                                              [
+                                                                  106.97784422828322,
+                                                                  -6.80029196124519
+                                                              ],
+                                                              [
+                                                                  106.97771554875563,
+                                                                  -6.799993497088148
+                                                              ],
+                                                              [
+                                                                  106.9780158009867,
+                                                                  -6.799631076076745
+                                                              ],
+                                                              [
+                                                                  106.97829704515041,
+                                                                  -6.799127361078289
+                                                              ],
+                                                              [
+                                                                  106.97840427809008,
+                                                                  -6.799063404333822
+                                                              ],
+                                                              [
+                                                                  106.97838283150216,
+                                                                  -6.798828896197889
+                                                              ],
+                                                              [
+                                                                  106.97867236043928,
+                                                                  -6.798669004221411
+                                                              ],
+                                                              [
+                                                                  106.9790691223161,
+                                                                  -6.7982746037853605
+                                                              ],
+                                                              [
+                                                                  106.97936937454716,
+                                                                  -6.79799745733939
+                                                              ],
+                                                              [
+                                                                  106.97988409265757,
+                                                                  -6.797869543541165
+                                                              ],
+                                                              [
+                                                                  106.98019506818261,
+                                                                  -6.797762948683347
+                                                              ],
+                                                              [
+                                                                  106.98030230112232,
+                                                                  -6.797475142449105
+                                                              ],
+                                                              [
+                                                                  106.9806668931172,
+                                                                  -6.79715535754229
+                                                              ],
+                                                              [
+                                                                  106.98098859193621,
+                                                                  -6.797027443519963
+                                                              ],
+                                                              [
+                                                                  106.98099931523019,
+                                                                  -6.796846231930138
+                                                              ],
+                                                              [
+                                                                  106.98131029075525,
+                                                                  -6.796558425147047
+                                                              ],
+                                                              [
+                                                                  106.98162126628029,
+                                                                  -6.796633041736985
+                                                              ],
+                                                              [
+                                                                  106.98275801303014,
+                                                                  -6.797037939045792
+                                                              ],
+                                                              [
+                                                                  106.98292958573359,
+                                                                  -6.79688870598002
+                                                              ],
+                                                              [
+                                                                  106.98340141066815,
+                                                                  -6.796846067952748
+                                                              ],
+                                                              [
+                                                                  106.98425927418558,
+                                                                  -6.796622218247371
+                                                              ],
+                                                              [
+                                                                  106.984441570183,
+                                                                  -6.796483644567964
+                                                              ],
+                                                              [
+                                                                  106.98476326900202,
+                                                                  -6.795844073222515
+                                                              ],
+                                                              [
+                                                                  106.9846667593563,
+                                                                  -6.794948671909576
+                                                              ],
+                                                              [
+                                                                  106.98448446335888,
+                                                                  -6.794117226340273
+                                                              ],
+                                                              [
+                                                                  106.98429144406744,
+                                                                  -6.793328417676575
+                                                              ],
+                                                              [
+                                                                  106.9840769781881,
+                                                                  -6.7927421401289925
+                                                              ],
+                                                              [
+                                                                  106.98388395889668,
+                                                                  -6.791953329210167
+                                                              ],
+                                                              [
+                                                                  106.9836909396053,
+                                                                  -6.7912497940562
+                                                              ],
+                                                              [
+                                                                  106.98333707090435,
+                                                                  -6.790098552494335
+                                                              ]
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Pasir Nunjang",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.95,
+                                                              -6.833333
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Telaga Biru",
+                                            "type":  "Telaga",
+                                            "icon":  "water",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9940966,
+                                                              -6.7483701
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Panyangcangan",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9887003,
+                                                              -6.7511081
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Puncak Gunung Gede",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9831941,
+                                                              -6.7898841
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Air Panas (Hot Spring)",
+                                            "type":  "Air Panas",
+                                            "icon":  "hotspring",
+                                            "source":  "manual:trail-guide",
+                                            "elevation_m":  2150
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9765,
+                                                              -6.7728
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Surya Kencana",
+                                            "type":  "Padang Edelweis",
+                                            "icon":  "flower",
+                                            "source":  "manual:trail-guide",
+                                            "elevation_m":  2750
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.98917,
+                                                              -6.78089
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Pintu Gerbang Gunung Putri",
+                                            "type":  "Registrasi",
+                                            "icon":  "gate",
+                                            "source":  "manual:google-maps",
+                                            "elevation_m":  1500
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              107.0078,
+                                                              -6.75817
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Rawa Denok",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9868761,
+                                                              -6.7570346
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Puncaweuleuh",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9763428,
+                                                              -6.7732692
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Pintu Gerbang Selabintana",
+                                            "type":  "Registrasi",
+                                            "icon":  "gate",
+                                            "source":  "manual:geo.json-start",
+                                            "elevation_m":  1000
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.96132,
+                                                              -6.84712
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Pondok Pemandangan",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.980485,
+                                                              -6.7673348
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Gunung Pangrango",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm",
+                                            "elevation_m":  3019
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9640294,
+                                                              -6.7698136
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Tanjakan Setan",
+                                            "type":  "Tanjakan",
+                                            "icon":  "climb",
+                                            "source":  "manual:trail-guide",
+                                            "elevation_m":  2480
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.98556,
+                                                              -6.78417
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Puncak Pangrango",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9645254,
+                                                              -6.770156
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Pintu Gerbang Cibodas",
+                                            "type":  "Registrasi",
+                                            "icon":  "gate",
+                                            "source":  "manual:google-maps",
+                                            "elevation_m":  1341
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9917,
+                                                              -6.745
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Gunung Gede",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm",
+                                            "elevation_m":  2958
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9817166,
+                                                              -6.7878411
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Alun-Alun Mandalawangi",
+                                            "type":  "Alun-Alun",
+                                            "icon":  "camp",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9640211,
+                                                              -6.7697831
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Curug Cibeureum",
+                                            "type":  "Curug",
+                                            "icon":  "waterfall",
+                                            "source":  "manual:google-maps",
+                                            "elevation_m":  1670
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9852,
+                                                              -6.7663
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Gunung Masigit",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.950833,
+                                                              -6.789722
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Semar Merah",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9852042,
+                                                              -6.7441291
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Batu Kukus",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9855205,
+                                                              -6.7612948
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Kandang Badak",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9750216,
+                                                              -6.7770212
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Gunung Sukaro",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.996944,
+                                                              -6.797222
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Semar Hitam",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.9718832,
+                                                              -6.7521428
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Gunung Gumuruh",
+                                            "type":  "Puncak",
+                                            "icon":  "summit",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.985833,
+                                                              -6.798611
+                                                          ]
+                                      }
+                     },
+                     {
+                         "type":  "Feature",
+                         "properties":  {
+                                            "name":  "Tarengtong",
+                                            "type":  "Pos / Shelter",
+                                            "icon":  "shelter",
+                                            "source":  "osm"
+                                        },
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              106.99934,
+                                                              -6.7437547
+                                                          ]
+                                      }
+                     }
+                 ]
 }

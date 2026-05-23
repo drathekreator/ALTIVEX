@@ -1,0 +1,170 @@
+[
+    {
+        "kind":  "natural=volcano",
+        "name":  "Gunung Gede",
+        "elevation":  "2958",
+        "lat":  -6.7878411,
+        "lon":  106.9817166,
+        "type":  "natural"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Pondok Pemandangan",
+        "elevation":  null,
+        "lat":  -6.7673348,
+        "lon":  106.980485,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Rawa Denok",
+        "elevation":  null,
+        "lat":  -6.7570346,
+        "lon":  106.9868761,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Puncaweuleuh",
+        "elevation":  null,
+        "lat":  -6.7732692,
+        "lon":  106.9763428,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "amenity=drinking_water",
+        "name":  "\u003cunnamed\u003e",
+        "elevation":  null,
+        "lat":  -6.7677702,
+        "lon":  106.9799333,
+        "type":  "amenity"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Tarengtong",
+        "elevation":  null,
+        "lat":  -6.7437547,
+        "lon":  106.99934,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Batu Kukus",
+        "elevation":  null,
+        "lat":  -6.7612948,
+        "lon":  106.9855205,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Kandang Badak",
+        "elevation":  null,
+        "lat":  -6.7770212,
+        "lon":  106.9750216,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Panyangcangan",
+        "elevation":  null,
+        "lat":  -6.7511081,
+        "lon":  106.9887003,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Telaga Biru",
+        "elevation":  null,
+        "lat":  -6.7483701,
+        "lon":  106.9940966,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "amenity=drinking_water",
+        "name":  "\u003cunnamed\u003e",
+        "elevation":  null,
+        "lat":  -6.764226,
+        "lon":  106.9654944,
+        "type":  "amenity"
+    },
+    {
+        "kind":  "amenity=drinking_water",
+        "name":  "\u003cunnamed\u003e",
+        "elevation":  null,
+        "lat":  -6.7770945,
+        "lon":  106.9746685,
+        "type":  "amenity"
+    },
+    {
+        "kind":  "natural=peak",
+        "name":  "Pasir Nunjang",
+        "elevation":  null,
+        "lat":  -6.833333,
+        "lon":  106.95,
+        "type":  "natural"
+    },
+    {
+        "kind":  "natural=volcano",
+        "name":  "Gunung Pangrango",
+        "elevation":  "3019",
+        "lat":  -6.7698136,
+        "lon":  106.9640294,
+        "type":  "natural"
+    },
+    {
+        "kind":  "natural=peak",
+        "name":  "Gunung Masigit",
+        "elevation":  null,
+        "lat":  -6.789722,
+        "lon":  106.950833,
+        "type":  "natural"
+    },
+    {
+        "kind":  "natural=peak",
+        "name":  "Gunung Sukaro",
+        "elevation":  null,
+        "lat":  -6.797222,
+        "lon":  106.996944,
+        "type":  "natural"
+    },
+    {
+        "kind":  "natural=peak",
+        "name":  "Gunung Gumuruh",
+        "elevation":  null,
+        "lat":  -6.798611,
+        "lon":  106.985833,
+        "type":  "natural"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Puncak Pangrango",
+        "elevation":  null,
+        "lat":  -6.770156,
+        "lon":  106.9645254,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "tourism=camp_site",
+        "name":  "Alun-Alun Mandalawangi",
+        "elevation":  null,
+        "lat":  -6.7697831,
+        "lon":  106.9640211,
+        "type":  "tourism"
+    },
+    {
+        "kind":  "natural=peak",
+        "name":  "Puncak Gunung Gede",
+        "elevation":  null,
+        "lat":  -6.7898841,
+        "lon":  106.9831941,
+        "type":  "natural"
+    },
+    {
+        "kind":  "natural=water",
+        "name":  "\u003cunnamed\u003e",
+        "elevation":  null,
+        "lat":  -6.741515,
+        "lon":  107.0095903,
+        "type":  "natural"
+    }
+]

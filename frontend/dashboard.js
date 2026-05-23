@@ -304,17 +304,33 @@ const routeColors = {
 // Sebelumnya pakai emoji (🚩 🚪 🏠 ⛺ 🏔 dll). Sekarang pakai SVG
 // dari ICON() — currentColor-aware, konsisten dengan dashboard.
 // `waypointIconName` map type Leaflet → key di `ICON_PATHS` (icons.js).
+//
+// Keys di kanan harus exist di icons.js. Keys di kiri match dengan
+// `properties.type` di GEO.json — kategori yang dipakai di kawasan
+// TNGGP (Cibodas, Gunung Putri, Selabintana) sudah dipetakan ke icon
+// terdekat dari pool icon yang available.
 // ====================================================================
 const waypointIconName = {
-    'Trailhead': 'flag',
-    'Gate':      'gate',
-    'Pos':       'home',
-    'Camp':      'tent',
-    'Summit':    'summit',
-    'Junction':  'junction',
-    'Waypoint':  'pin',
-    'Water':     'water',
-    'default':   'pin',
+    // Generic (kompat lama)
+    'Trailhead':         'flag',
+    'Gate':              'gate',
+    'Pos':               'home',
+    'Camp':              'tent',
+    'Summit':            'summit',
+    'Junction':          'junction',
+    'Waypoint':          'pin',
+    'Water':             'water',
+    // Kategori TNGGP (hasil enrich-pangrango-geo.ps1)
+    'Registrasi':        'gate',     // Pintu Gerbang Cibodas/Putri/Selabintana
+    'Puncak':            'summit',   // Puncak Gede, Pangrango, Gumuruh, dst
+    'Pos / Shelter':     'home',     // Kandang Badak, Batu Kukus, dst
+    'Telaga':            'water',    // Telaga Biru
+    'Alun-Alun':         'tent',     // Alun-Alun Mandalawangi
+    'Curug':             'water',    // Curug Cibeureum
+    'Air Panas':         'water',    // Hot spring di jalur Cibodas
+    'Padang Edelweis':   'pin',      // Surya Kencana
+    'Tanjakan':          'summit',   // Tanjakan Setan
+    'default':           'pin',
 };
 
 // ====================================================================
