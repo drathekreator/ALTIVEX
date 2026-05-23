@@ -1085,7 +1085,6 @@ function _renderHikerCards() {
                             ${battHtml}
                         </div>
                         <div class="alert-card__actions">
-                            <button class="neo-btn neo-btn-sm neo-btn-red" data-action="alert" data-id="${idEsc}">${ICON('bell', 14)} ALERT</button>
                             <button class="neo-btn neo-btn-sm" data-action="path" data-id="${idEsc}">${ICON('map', 14)} PATH</button>
                         </div>
                     </div>
@@ -1131,8 +1130,11 @@ function handleHikerListClick(ev) {
     const action = target.dataset.action;
     const id = target.dataset.id || "";
     if (!id) return;
-    if (action === 'alert')      kirimGetaran(id);
-    else if (action === 'path')  toggleHistory(id);
+    // Tombol Alert manual sudah dihapus — alert getar/buzzer sekarang
+    // di-trigger otomatis oleh backend ke basecamp ESP32 saat pendaki
+    // out-of-geofence/low-battery/signal-lost. UI cuma render warna +
+    // banner. Yang tersisa di kartu hanya 'path' untuk lihat history.
+    if (action === 'path')  toggleHistory(id);
 }
 
 function handleAvailableListClick(ev) {
@@ -1146,17 +1148,6 @@ function handleAvailableListClick(ev) {
 function openModalWithId(id) {
     openModal();
     document.getElementById('reg-id-perangkat').value = id;
-}
-
-async function kirimGetaran(id) {
-    showToast(`Mengirim sinyal getar ke ${id}...`);
-    try {
-        await apiFetch("/api/alert", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id_perangkat: id, jenis_peringatan: "OUT_OF_BOUNDS" })
-        });
-    } catch (e) {}
 }
 
 async function toggleHistory(id) {

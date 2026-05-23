@@ -21,6 +21,10 @@ actix = "0.13"
 actix-web-actors = "4.3"
 rumqttc = "0.24"
 chrono = { version = "0.4", features = ["serde"] }
+# Geofence check server-side — load GEO.json, polygon-in-point test
+# untuk auto-trigger alert ke basecamp saat pendaki keluar koridor.
+geojson = "0.24"
+geo = "0.27"
 
 # Dev-dependencies untuk exploration test (PBT — Bug Condition).
 # Ditambahkan oleh task 1 spec altivex-critical-fixes.

@@ -16,7 +16,10 @@ use rumqttc::{AsyncClient, MqttOptions, QoS, Event, Packet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::Duration;
+use std::collections::{HashMap, HashSet};
+use std::time::{Duration, Instant};
+use geo::{Contains, Coord, MultiPolygon, Polygon, LineString};
+use geojson::{GeoJson, Value};
 
 // ============================================================================
 // SerialHub (Task 3.1 — Bug B1, B4)
@@ -133,11 +136,457 @@ fn sanitize_battery(b: Option<i16>) -> Option<i16> {
     }
 }
 
+// ============================================================================
+// Auto-Alert Module — Geofence + Battery + Signal-Lost
+// ----------------------------------------------------------------------------
+// Backend men-evaluasi 3 kondisi alert tiap publish posisi masuk:
+//
+//   1. OUT_OF_GEOFENCE — pendaki di luar polygon koridor (50m buffer
+//      dari LineString jalur) yang ke-load dari `frontend/GEO.json`.
+//   2. LOW_BATTERY     — battery <15% (dilaporkan transmitter pendaki).
+//   3. SIGNAL_LOST     — pendaki status='Mendaki' tapi >10 menit tidak
+//      ada publish baru. Di-detect periodic task tiap 30 detik.
+//
+// State machine alert per (id_perangkat, kategori):
+//   Inactive  -> Active   : trigger publish ke MQTT topic basecamp +
+//                           backend memori `active_alerts.insert(...)`.
+//   Active    -> Active   : NO-OP (debounce — gak spam basecamp).
+//   Active    -> Inactive : trigger publish CLEAR ke basecamp +
+//                           `active_alerts.remove(...)`.
+//
+// Basecamp ESP32 subscribe ke `altivex/basecamp/cmd` dan maintain
+// HashSet alert aktif sendiri. Buzzer continuous selama set non-empty.
+// Tombol acknowledge di basecamp kirim back via topic `altivex/
+// basecamp/ack` (dipakai backend untuk reset notification flag tapi
+// alert tetap "active" sampai kondisi clear).
+// ============================================================================
+
+/// Kategori alert untuk komunikasi backend ↔ basecamp ESP32.
+/// Stringified ke JSON: "OUT_OF_GEOFENCE" / "LOW_BATTERY" / "SIGNAL_LOST".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum AlertKind {
+    OutOfGeofence,
+    LowBattery,
+    SignalLost,
+}
+
+impl AlertKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            AlertKind::OutOfGeofence => "OUT_OF_GEOFENCE",
+            AlertKind::LowBattery    => "LOW_BATTERY",
+            AlertKind::SignalLost    => "SIGNAL_LOST",
+        }
+    }
+}
+
+/// Payload yang di-publish backend ke `altivex/basecamp/cmd`.
+/// `state`: "ON"  = trigger alert (tambah ke set basecamp).
+///          "OFF" = clear alert (hapus dari set basecamp).
+#[derive(Debug, Serialize)]
+struct BasecampCmd<'a> {
+    id_perangkat: &'a str,
+    nama_pendaki: Option<&'a str>,
+    kind: &'static str,
+    state: &'static str,
+    reason: String,
+}
+
+/// State observability per pendaki yang dipakai signal-lost detector.
+/// `last_seen` di-update tiap publish posisi masuk; periodic task
+/// scan map ini, kalau ada entry yang `last_seen` lebih dari 10 menit
+/// lalu DAN pendaki masih status='Mendaki' di DB → trigger SIGNAL_LOST.
+///
+/// Field `last_lat/last_lon/last_battery` di-track untuk future use
+/// (mis. operator query "posisi terakhir sebelum signal lost"); saat
+/// ini cuma `last_seen` yang dipakai watcher.
+#[derive(Debug, Clone)]
+struct DeviceObservability {
+    last_seen: Instant,
+    #[allow(dead_code)]
+    last_lat: f64,
+    #[allow(dead_code)]
+    last_lon: f64,
+    #[allow(dead_code)]
+    last_battery: Option<i16>,
+}
+
+/// Hub state alert — dishare antara MQTT handler, periodic task,
+/// dan publisher basecamp via Arc<Mutex<...>>.
+struct AlertHub {
+    /// Polygon koridor (hasil load + buffer dari GEO.json).
+    /// `None` saat GEO.json gagal load (fail-open: alert geofence
+    /// di-skip, tapi alert lain tetap jalan).
+    geofence: Option<MultiPolygon<f64>>,
+    /// Set alert aktif: (id_perangkat, kind) → tracking transition
+    /// supaya tidak spam basecamp.
+    active: HashSet<(String, AlertKind)>,
+    /// Last-seen tracker per device — input untuk signal-lost detector.
+    devices: HashMap<String, DeviceObservability>,
+    /// MQTT client untuk publish ke basecamp. Set `Some` setelah
+    /// MQTT subscriber connect ke broker.
+    mqtt: Option<AsyncClient>,
+}
+
+impl AlertHub {
+    fn new(geofence: Option<MultiPolygon<f64>>) -> Self {
+        Self {
+            geofence,
+            active: HashSet::new(),
+            devices: HashMap::new(),
+            mqtt: None,
+        }
+    }
+}
+
+/// Threshold konfigurasi alert. Kalau ke depan mau di-tune lewat
+/// env, tinggal ganti hard-coded ini ke `env::var(...)`.
+const SIGNAL_LOST_THRESHOLD: Duration = Duration::from_secs(10 * 60); // 10 menit
+const LOW_BATTERY_THRESHOLD_PCT: i16 = 15;
+const SIGNAL_LOST_CHECK_INTERVAL: Duration = Duration::from_secs(30);
+const GEOFENCE_BUFFER_DEG: f64 = 0.00045; // ≈ 50m di equator
+
+/// Topic MQTT untuk push alert ke basecamp ESP32.
+/// Basecamp subscribe ke topic ini, maintain HashSet alert lokal,
+/// buzzer continuous selama set non-empty.
+const TOPIC_BASECAMP_CMD: &str = "altivex/basecamp/cmd";
+
+/// Load GeoJSON dari path, ekstrak semua LineString feature dengan
+/// property `type=route`, build MultiPolygon buffer (~50m) sebagai
+/// koridor geofence.
+///
+/// Return `None` kalau:
+///   - File tidak ada / unreadable
+///   - JSON malformed
+///   - Tidak ada feature route ditemukan
+///
+/// Caller: `main()` saat startup, hasilnya di-share via Arc<Mutex<AlertHub>>.
+/// Fail-open by design — kalau load gagal, alert geofence di-skip,
+/// tapi battery + signal-lost tetap jalan.
+fn load_geofence(path: &str) -> Option<MultiPolygon<f64>> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let geo: GeoJson = content.parse().ok()?;
+    let collection = match geo {
+        GeoJson::FeatureCollection(fc) => fc,
+        _ => return None,
+    };
+
+    let mut polygons: Vec<Polygon<f64>> = Vec::new();
+
+    for feature in collection.features {
+        let Some(geom) = feature.geometry else { continue };
+        let line: LineString<f64> = match geom.value {
+            Value::LineString(coords) => coords
+                .into_iter()
+                .filter_map(|c| {
+                    if c.len() >= 2 {
+                        Some(Coord { x: c[0], y: c[1] })
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+                .into(),
+            Value::Polygon(rings) => {
+                // Polygon manual sudah ada di GEO.json (mis. kasus
+                // user-defined geofence_corridor). Pakai langsung
+                // tanpa buffering.
+                if let Some(outer) = rings.first() {
+                    let coords: Vec<Coord<f64>> = outer
+                        .iter()
+                        .filter_map(|c| {
+                            if c.len() >= 2 {
+                                Some(Coord { x: c[0], y: c[1] })
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    if coords.len() >= 4 {
+                        polygons.push(Polygon::new(LineString(coords), vec![]));
+                    }
+                }
+                continue;
+            }
+            _ => continue,
+        };
+        if line.0.len() < 2 {
+            continue;
+        }
+        // Buffer manual: untuk tiap segment, bikin rectangle melebar
+        // 50m kiri-kanan. Cara ini lebih ringan daripada `geo-buffer`
+        // crate dependency tambahan.
+        polygons.extend(buffer_linestring(&line, GEOFENCE_BUFFER_DEG));
+    }
+
+    if polygons.is_empty() {
+        return None;
+    }
+    Some(MultiPolygon(polygons))
+}
+
+/// Bikin rectangle sederhana di sekeliling tiap segment LineString,
+/// lebar `buffer_deg` derajat (≈ buffer_deg * 111km). Hasilnya
+/// vec polygon yang nanti di-union jadi MultiPolygon — `Contains`
+/// di geo crate akan return true kalau point di salah satu polygon.
+fn buffer_linestring(line: &LineString<f64>, buffer_deg: f64) -> Vec<Polygon<f64>> {
+    let coords: Vec<&Coord<f64>> = line.0.iter().collect();
+    let mut polys = Vec::new();
+    for window in coords.windows(2) {
+        let a = window[0];
+        let b = window[1];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let len = (dx * dx + dy * dy).sqrt();
+        if len < 1e-9 {
+            continue;
+        }
+        // Vektor tegak lurus (di-normalize) × buffer
+        let nx = -dy / len * buffer_deg;
+        let ny = dx / len * buffer_deg;
+        let p1 = Coord { x: a.x + nx, y: a.y + ny };
+        let p2 = Coord { x: b.x + nx, y: b.y + ny };
+        let p3 = Coord { x: b.x - nx, y: b.y - ny };
+        let p4 = Coord { x: a.x - nx, y: a.y - ny };
+        let exterior = LineString(vec![p1, p2, p3, p4, p1]);
+        polys.push(Polygon::new(exterior, vec![]));
+    }
+    polys
+}
+
+/// True kalau (lat, lon) di dalam polygon koridor.
+/// Fail-open: kalau geofence belum di-load (None), return true
+/// supaya alert geofence dianggap "always inside" — UI tidak
+/// trigger banner palsu, basecamp tidak buzzer palsu.
+fn point_in_geofence(geofence: Option<&MultiPolygon<f64>>, lat: f64, lon: f64) -> bool {
+    match geofence {
+        Some(mp) => mp.contains(&geo::Point::new(lon, lat)),
+        None => true,
+    }
+}
+
+/// Helper: lookup nama_pendaki dari id_perangkat untuk pesan alert
+/// yang lebih informatif. Best-effort — kalau DB error atau tidak
+/// ditemukan, return None.
+async fn lookup_nama_pendaki(
+    pool: &Pool<Postgres>,
+    id_perangkat: &str,
+) -> Option<String> {
+    let result: Result<Option<(String,)>, _> = sqlx::query_as(
+        "SELECT nama_pendaki FROM pendaki \
+         WHERE id_perangkat = $1 AND status = 'Mendaki' \
+         ORDER BY tanggal_naik DESC LIMIT 1",
+    )
+    .bind(id_perangkat)
+    .fetch_optional(pool)
+    .await;
+    result.ok().flatten().map(|(n,)| n)
+}
+
+/// Push alert ke basecamp ESP32 via MQTT publish ke
+/// `altivex/basecamp/cmd`. Idempotent dengan state machine:
+/// caller bertanggung jawab cek `active.insert/remove` sebelum publish
+/// supaya tidak spam.
+async fn publish_basecamp_cmd(
+    mqtt: &AsyncClient,
+    cmd: &BasecampCmd<'_>,
+) {
+    let payload = match serde_json::to_vec(cmd) {
+        Ok(v) => v,
+        Err(e) => {
+            println!("⚠️  Gagal serialize BasecampCmd: {}", e);
+            return;
+        }
+    };
+    if let Err(e) = mqtt
+        .publish(TOPIC_BASECAMP_CMD, QoS::AtLeastOnce, false, payload)
+        .await
+    {
+        println!(
+            "⚠️  Gagal publish basecamp cmd ({} {}): {:?}",
+            cmd.kind, cmd.id_perangkat, e
+        );
+    } else {
+        println!(
+            "🚨 Basecamp cmd → {} {} (state={}) reason='{}'",
+            cmd.id_perangkat, cmd.kind, cmd.state, cmd.reason
+        );
+    }
+}
+
+/// Evaluate semua kondisi alert (geofence + battery) untuk satu
+/// publish posisi yang baru masuk, fire transition ON/OFF ke basecamp
+/// kalau state berubah.
+///
+/// SIGNAL_LOST tidak di-evaluasi di sini — itu dihandle periodic task
+/// tiap 30 detik (lihat `start_signal_lost_watcher`). Tapi `last_seen`
+/// di update di sini supaya watcher punya data fresh.
+async fn evaluate_alerts(
+    hub: &Arc<Mutex<AlertHub>>,
+    pool: &Pool<Postgres>,
+    data: &IncomingData,
+) {
+    // 1. Update last-seen + lookup nama_pendaki sebelum lock hub.
+    let nama = lookup_nama_pendaki(pool, &data.id_perangkat).await;
+    let battery = sanitize_battery(data.battery);
+
+    // 2. Hitung outcome di scope yang me-lock hub minimal.
+    let (transitions, mqtt_opt) = {
+        let mut h = hub.lock().unwrap();
+        h.devices.insert(
+            data.id_perangkat.clone(),
+            DeviceObservability {
+                last_seen: Instant::now(),
+                last_lat: data.latitude,
+                last_lon: data.longitude,
+                last_battery: battery,
+            },
+        );
+
+        let mut transitions: Vec<(AlertKind, bool, String)> = Vec::new();
+
+        // OUT_OF_GEOFENCE
+        let inside = point_in_geofence(h.geofence.as_ref(), data.latitude, data.longitude);
+        let key_geo = (data.id_perangkat.clone(), AlertKind::OutOfGeofence);
+        let was_active_geo = h.active.contains(&key_geo);
+        if !inside && !was_active_geo {
+            h.active.insert(key_geo.clone());
+            transitions.push((
+                AlertKind::OutOfGeofence,
+                true,
+                format!("Posisi ({:.5}, {:.5}) di luar koridor", data.latitude, data.longitude),
+            ));
+        } else if inside && was_active_geo {
+            h.active.remove(&key_geo);
+            transitions.push((AlertKind::OutOfGeofence, false, "Kembali ke koridor".into()));
+        }
+
+        // LOW_BATTERY
+        let key_bat = (data.id_perangkat.clone(), AlertKind::LowBattery);
+        let was_active_bat = h.active.contains(&key_bat);
+        match battery {
+            Some(b) if b < LOW_BATTERY_THRESHOLD_PCT && !was_active_bat => {
+                h.active.insert(key_bat.clone());
+                transitions.push((AlertKind::LowBattery, true, format!("Baterai {}%", b)));
+            }
+            Some(b) if b >= LOW_BATTERY_THRESHOLD_PCT && was_active_bat => {
+                h.active.remove(&key_bat);
+                transitions.push((AlertKind::LowBattery, false, format!("Baterai pulih {}%", b)));
+            }
+            _ => {}
+        }
+
+        // SIGNAL_LOST clear-on-update: kalau publish baru masuk dari
+        // device yang sebelumnya signal-lost, otomatis OFF.
+        let key_sig = (data.id_perangkat.clone(), AlertKind::SignalLost);
+        if h.active.contains(&key_sig) {
+            h.active.remove(&key_sig);
+            transitions.push((AlertKind::SignalLost, false, "Sinyal pulih".into()));
+        }
+
+        (transitions, h.mqtt.clone())
+    };
+
+    // 3. Publish ke MQTT di luar lock supaya gak block handler lain.
+    if let Some(mqtt) = mqtt_opt {
+        for (kind, on, reason) in transitions {
+            let cmd = BasecampCmd {
+                id_perangkat: &data.id_perangkat,
+                nama_pendaki: nama.as_deref(),
+                kind: kind.as_str(),
+                state: if on { "ON" } else { "OFF" },
+                reason,
+            };
+            publish_basecamp_cmd(&mqtt, &cmd).await;
+        }
+    }
+}
+
+/// Periodic task — scan `hub.devices`, kalau ada entry dengan
+/// `last_seen` lebih lama dari 10 menit DAN pendaki masih
+/// status='Mendaki' di DB, trigger SIGNAL_LOST. Idempotent (cuma
+/// trigger ON sekali per transition).
+async fn start_signal_lost_watcher(
+    hub: Arc<Mutex<AlertHub>>,
+    pool: Pool<Postgres>,
+) {
+    println!(
+        "👀 Signal-lost watcher aktif (threshold={}s, interval={}s)",
+        SIGNAL_LOST_THRESHOLD.as_secs(),
+        SIGNAL_LOST_CHECK_INTERVAL.as_secs()
+    );
+    let mut ticker = tokio::time::interval(SIGNAL_LOST_CHECK_INTERVAL);
+    // Skip first tick (immediate fire bikin false-positive saat startup).
+    ticker.tick().await;
+    loop {
+        ticker.tick().await;
+
+        // Snapshot device yang LAMA tidak terlihat (release lock cepat).
+        let candidates: Vec<(String, DeviceObservability)> = {
+            let h = hub.lock().unwrap();
+            let now = Instant::now();
+            h.devices
+                .iter()
+                .filter(|(id, obs)| {
+                    let key = (id.to_string(), AlertKind::SignalLost);
+                    let timeout = now.duration_since(obs.last_seen) >= SIGNAL_LOST_THRESHOLD;
+                    timeout && !h.active.contains(&key)
+                })
+                .map(|(id, obs)| (id.clone(), obs.clone()))
+                .collect()
+        };
+
+        for (id, _obs) in candidates {
+            // Konfirmasi pendaki masih status='Mendaki' (kalau sudah
+            // turun, signal-lost tidak relevan).
+            let still_active: Result<Option<(i64,)>, _> = sqlx::query_as(
+                "SELECT COUNT(*) FROM pendaki \
+                 WHERE id_perangkat = $1 AND status = 'Mendaki'",
+            )
+            .bind(&id)
+            .fetch_optional(&pool)
+            .await;
+            let still_active = matches!(still_active, Ok(Some((n,))) if n > 0);
+            if !still_active {
+                continue;
+            }
+
+            // Lookup nama untuk pesan + lock hub minimal.
+            let nama = lookup_nama_pendaki(&pool, &id).await;
+            let mqtt_opt = {
+                let mut h = hub.lock().unwrap();
+                let key = (id.clone(), AlertKind::SignalLost);
+                if h.active.contains(&key) {
+                    None
+                } else {
+                    h.active.insert(key);
+                    h.mqtt.clone()
+                }
+            };
+            if let Some(mqtt) = mqtt_opt {
+                let cmd = BasecampCmd {
+                    id_perangkat: &id,
+                    nama_pendaki: nama.as_deref(),
+                    kind: AlertKind::SignalLost.as_str(),
+                    state: "ON",
+                    reason: format!(
+                        "Tidak ada sinyal >= {} menit",
+                        SIGNAL_LOST_THRESHOLD.as_secs() / 60
+                    ),
+                };
+                publish_basecamp_cmd(&mqtt, &cmd).await;
+            }
+        }
+    }
+}
+
 // 3. Endpoint POST: Menyimpan data baru ke Database
 async fn terima_data(
     data: web::Json<IncomingData>,
     pool: web::Data<Pool<Postgres>>,
     tx: web::Data<broadcast::Sender<String>>,
+    hub: web::Data<Arc<Mutex<AlertHub>>>,
 ) -> impl Responder {
     // Task 3.3 — guard koordinat & ID perangkat sebelum menyentuh DB.
     // Payload jahil (lat/lon out-of-range, NaN, id kosong, atau (0,0) dari
@@ -172,6 +621,9 @@ async fn terima_data(
     if let Ok(json_str) = serde_json::to_string(&*data) {
         let _ = tx.send(json_str);
     }
+
+    // Auto-alert evaluation (geofence + battery transitions, async).
+    evaluate_alerts(hub.get_ref(), pool.get_ref(), &data).await;
 
     match result {
         Ok(_) => HttpResponse::Ok().body("Berhasil: Data sensor tersimpan di Database!"),
@@ -723,6 +1175,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
 async fn start_mqtt_client(
     pool: Pool<Postgres>,
     tx: broadcast::Sender<String>,
+    hub: Arc<Mutex<AlertHub>>,
 ) {
     let host = env::var("MQTT_BROKER_HOST").unwrap_or_else(|_| "localhost".to_string());
     let port = env::var("MQTT_BROKER_PORT")
@@ -767,6 +1220,29 @@ async fn start_mqtt_client(
             continue;
         }
 
+        // Sekalian subscribe ke topic acknowledge dari basecamp ESP32.
+        // Saat penjaga tekan tombol fisik, basecamp publish ke
+        // `altivex/basecamp/ack` dengan payload `{"id_perangkat": "..."}`
+        // atau `{"all": true}` — backend reset notification flag tapi
+        // alert tetap "active" di hub sampai kondisi clear.
+        if let Err(e) = client
+            .subscribe("altivex/basecamp/ack", QoS::AtLeastOnce)
+            .await
+        {
+            println!(
+                "⚠️  Gagal queue subscribe basecamp/ack: {:?} (alert ack tidak akan bekerja)",
+                e
+            );
+        }
+
+        // Daftarkan client ini ke AlertHub supaya alert publisher bisa
+        // dipakai dari berbagai handler. Re-set tiap iterasi outer loop
+        // (pas reconnect) supaya stale client tidak dipakai.
+        {
+            let mut h = hub.lock().unwrap();
+            h.mqtt = Some(client.clone());
+        }
+
         // 3. Inner loop — poll sampai error. `healthy` flag agar kita bisa
         //    drop client + eventloop SETELAH inner loop selesai (lewat
         //    fall-through ke akhir outer loop), bukan dari tengah match.
@@ -783,6 +1259,25 @@ async fn start_mqtt_client(
                     }
 
                     let payload = publish.payload;
+                    let topic = publish.topic.as_str();
+
+                    // Routing: dispatch berdasarkan topic. Sensor data
+                    // dari pendaki masuk via altivex/sensor/data; ack
+                    // dari basecamp ESP32 masuk via altivex/basecamp/ack.
+                    if topic == "altivex/basecamp/ack" {
+                        // Future hook: kalau penjaga tekan tombol, basecamp
+                        // publish payload kecil ke topic ini supaya backend
+                        // bisa log "ack diterima". Saat ini basecamp ESP32
+                        // sudah handle silence-buzzer secara lokal (tidak
+                        // butuh round-trip), tapi log ini berguna untuk
+                        // observability — penjaga sebenernya pernah ack atau
+                        // ngga.
+                        let sample: String = String::from_utf8_lossy(&payload)
+                            .chars().take(120).collect();
+                        println!("🔕 Basecamp ACK diterima: {}", sample);
+                        continue;
+                    }
+
                     if let Ok(data) = serde_json::from_slice::<IncomingData>(&payload) {
                         // Visibility log — sengaja ringkas (tanpa payload
                         // utuh) supaya tidak men-spam log saat publish
@@ -848,6 +1343,10 @@ async fn start_mqtt_client(
                                 Err(_) => println!("ℹ️  WS belum ada subscriber (skip broadcast)."),
                             }
                         }
+
+                        // Auto-alert evaluation (geofence + battery,
+                        // basecamp MQTT push pada transisi state).
+                        evaluate_alerts(&hub, &pool, &data).await;
                     } else {
                         // Payload bukan IncomingData JSON valid (mis. ESP32
                         // kirim non-JSON / format salah). Print sample byte
@@ -1359,11 +1858,41 @@ async fn main() -> std::io::Result<()> {
 
     println!("✅ Database siap. Tabel log_sensor dan pendaki (dengan kolom telepon_darurat) tersedia.");
 
+    // ------------------------------------------------------------------
+    // Auto-Alert Hub (geofence + battery + signal-lost watcher)
+    // ------------------------------------------------------------------
+    // Load GEO.json sekali di startup. Kalau gagal (file tidak ada,
+    // JSON malformed, dst.) → fail-open: alert geofence tidak aktif,
+    // tapi alert battery + signal-lost tetap jalan.
+    let geofence_path = env::var("GEOFENCE_PATH")
+        .unwrap_or_else(|_| "./frontend/GEO.json".to_string());
+    let geofence = load_geofence(&geofence_path);
+    match &geofence {
+        Some(mp) => println!(
+            "✅ Geofence ke-load dari '{}' ({} polygon segments).",
+            geofence_path,
+            mp.0.len()
+        ),
+        None => println!(
+            "⚠️  GEO.json tidak ke-load dari '{}' — alert OUT_OF_GEOFENCE dinonaktifkan.",
+            geofence_path
+        ),
+    }
+    let alert_hub = Arc::new(Mutex::new(AlertHub::new(geofence)));
+
+    // Spawn signal-lost watcher (periodic 30 detik).
+    let hub_watcher = alert_hub.clone();
+    let pool_watcher = pool.clone();
+    tokio::spawn(async move {
+        start_signal_lost_watcher(hub_watcher, pool_watcher).await;
+    });
+
     // Jalankan MQTT Client di background
     let pool_mqtt = pool.clone();
     let tx_mqtt = tx.clone();
+    let hub_mqtt = alert_hub.clone();
     tokio::spawn(async move {
-        start_mqtt_client(pool_mqtt, tx_mqtt).await;
+        start_mqtt_client(pool_mqtt, tx_mqtt, hub_mqtt).await;
     });
 
     // ------------------------------------------------------------------
@@ -1439,6 +1968,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(tx_data.clone())
             .app_data(serial_hub_data.clone())
+            .app_data(web::Data::new(alert_hub.clone()))
             .app_data(auth_config_data.clone())
             .route("/api/sensor", web::post().to(terima_data))
             .route("/api/sensor", web::get().to(ambil_data))
