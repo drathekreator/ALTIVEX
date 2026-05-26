@@ -59,6 +59,7 @@ function showLoginModal() {
     const modal = document.getElementById("modal-login");
     if (modal) {
         modal.style.display = "flex";
+        modal.removeAttribute("hidden");
         // Reset error state setiap kali modal di-show.
         const err = document.getElementById("login-error");
         if (err) err.hidden = true;
@@ -72,7 +73,10 @@ function showLoginModal() {
 
 function hideLoginModal() {
     const modal = document.getElementById("modal-login");
-    if (modal) modal.style.display = "none";
+    if (modal) {
+        modal.style.display = "none";
+        modal.setAttribute("hidden", "");
+    }
     const logout = document.getElementById("logout-btn");
     if (logout) logout.hidden = false;
 }
@@ -90,8 +94,7 @@ async function handleLoginSubmit(ev) {
         return;
     }
 
-    btn.disabled = true;
-    btn.textContent = "Memverifikasi...";
+    setBusy(btn, true, "MEMVERIFIKASI...");
 
     try {
         const res = await fetch("/api/login", {
@@ -110,13 +113,13 @@ async function handleLoginSubmit(ev) {
             return;
         }
         if (!res.ok) {
-            err.textContent = `Server error (${res.status}). Coba lagi.`;
+            err.textContent = `Server error (${res.status}). Coba lagi dalam beberapa detik.`;
             err.hidden = false;
             return;
         }
         const json = await res.json();
         if (!json || !json.token) {
-            err.textContent = "Respons server tidak valid.";
+            err.textContent = "Respons server tidak valid. Hubungi admin.";
             err.hidden = false;
             return;
         }
@@ -129,11 +132,10 @@ async function handleLoginSubmit(ev) {
         fetchInitialSensorData();
         fetchPendakiAktif();
     } catch (e) {
-        err.textContent = "Tidak bisa terhubung ke server.";
+        err.textContent = "Tidak bisa terhubung ke server. Coba lagi dalam beberapa detik.";
         err.hidden = false;
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = ICON('unlock', 18) + ' MASUK';
+        setBusy(btn, false);
     }
 }
 
@@ -589,7 +591,6 @@ function openModal() {
     document.getElementById('modal-title').innerText = "REGISTRASI PENDAKI";
     document.getElementById('reg-nama').value = "";
     document.getElementById('reg-telp').value = "";
-    document.getElementById('btn-simpan').onclick = submitRegistrasi;
 
     const select = document.getElementById('reg-id-perangkat');
     select.innerHTML = '<option value="">-- Pilih Perangkat --</option>';
@@ -608,16 +609,23 @@ function openModal() {
             select.innerHTML += `<option value="${idEsc}">${idEsc}</option>`;
         });
     }
-    document.getElementById('modal-registrasi').style.display = 'flex';
+
+    // Reset error state visual saat re-open.
+    ['reg-nama', 'reg-telp', 'reg-id-perangkat'].forEach(idAttr => {
+        const el = document.getElementById(idAttr);
+        if (el) el.removeAttribute('aria-invalid');
+    });
+
+    openOverlayModal('modal-registrasi');
 }
 
-function closeModal()  { document.getElementById('modal-registrasi').style.display = 'none'; }
-function closeConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
+function closeModal()  { closeOverlayModal('modal-registrasi'); }
+function closeConfirm() { closeOverlayModal('modal-confirm'); }
 
 function showConfirm(title, msg, onConfirm) {
     document.getElementById('confirm-title').innerText = title;
     document.getElementById('confirm-msg').innerText = msg;
-    document.getElementById('modal-confirm').style.display = 'flex';
+    openOverlayModal('modal-confirm');
     document.getElementById('confirm-yes').onclick = () => {
         onConfirm();
         closeConfirm();
@@ -627,28 +635,72 @@ function showConfirm(title, msg, onConfirm) {
 // ====================================================================
 // API ACTIONS
 // ====================================================================
-async function submitRegistrasi() {
-    const nama = document.getElementById('reg-nama').value;
-    const idAlat = document.getElementById('reg-id-perangkat').value;
-    const telp = document.getElementById('reg-telp').value;
+const TELP_PATTERN = /^[0-9+()\-\s]{8,20}$/;
 
-    if (!nama || !idAlat || !telp) return showToast("Harap isi semua field!", "error");
+function validateRegistrasiInputs(nama, idAlat, telp) {
+    const errors = [];
+    const namaEl = document.getElementById('reg-nama');
+    const idEl   = document.getElementById('reg-id-perangkat');
+    const telpEl = document.getElementById('reg-telp');
+
+    [namaEl, idEl, telpEl].forEach(el => el && el.removeAttribute('aria-invalid'));
+
+    if (!nama || nama.trim().length < 2) {
+        errors.push("Nama minimal 2 karakter.");
+        if (namaEl) namaEl.setAttribute('aria-invalid', 'true');
+    }
+    if (!idAlat) {
+        errors.push("Pilih ID perangkat dari daftar.");
+        if (idEl) idEl.setAttribute('aria-invalid', 'true');
+    }
+    if (!telp || !TELP_PATTERN.test(telp.trim())) {
+        errors.push("Telepon harus 8–20 digit (angka / + / - / spasi).");
+        if (telpEl) telpEl.setAttribute('aria-invalid', 'true');
+    }
+    return errors;
+}
+
+async function submitRegistrasi(ev) {
+    if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+    const nama = (document.getElementById('reg-nama').value || "").trim();
+    const idAlat = document.getElementById('reg-id-perangkat').value;
+    const telp = (document.getElementById('reg-telp').value || "").trim();
+
+    const errors = validateRegistrasiInputs(nama, idAlat, telp);
+    if (errors.length) {
+        showToast(errors[0], "error");
+        return;
+    }
+
+    const btn = document.getElementById('btn-simpan');
+    setBusy(btn, true, "MENYIMPAN...");
 
     try {
-        const res = await apiFetch("/api/pendaki", {
-            method: "POST",
+        // Untuk update flow (editingId !== null) gunakan endpoint PUT.
+        const isEdit = editingId !== null && editingId !== undefined;
+        const url = isEdit ? `/api/pendaki/${editingId}` : "/api/pendaki";
+        const method = isEdit ? "PUT" : "POST";
+
+        const res = await apiFetch(url, {
+            method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nama_pendaki: nama, id_perangkat: idAlat, telepon_darurat: telp })
         });
         if (res.ok) {
-            showToast("Pendaki Berhasil Didaftarkan!", "success");
+            showToast(isEdit ? "Perubahan disimpan" : "Pendaki berhasil didaftarkan", "success");
             closeModal();
             fetchPendakiAktif();
             fetchHistory();
+        } else if (res.status === 404) {
+            showToast("Pendaki tidak ditemukan", "error");
         } else {
-            showToast("Gagal mendaftar!", "error");
+            showToast(isEdit ? "Gagal menyimpan" : "Gagal mendaftar", "error");
         }
-    } catch (e) { showToast("Koneksi Error", "error"); }
+    } catch (e) {
+        showToast("Koneksi error. Coba lagi.", "error");
+    } finally {
+        setBusy(btn, false);
+    }
 }
 
 async function fetchPendakiAktif() {
@@ -677,6 +729,19 @@ async function fetchHistory() {
 
 function renderHistoryTable(data) {
     const tbody = document.getElementById('history-table-body');
+    if (!data || data.length === 0) {
+        // Empty state — tabel kosong tampil pesan jelas, bukan blank.
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state">
+                    <div class="empty-state__icon">${ICON('users', 28)}</div>
+                    <div class="empty-state__title">Belum ada riwayat</div>
+                    <div class="empty-state__sub">Klik "Daftarkan Pendaki" untuk mulai mendaftarkan pendaki baru.</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
     tbody.innerHTML = data.map(p => {
         const idAttr = escapeHtml(String(p.id ?? ""));
         const idPerangkatAttr = escapeHtml(String(p.id_perangkat ?? ""));
@@ -743,28 +808,33 @@ function handleHistoryTableClick(ev) {
 }
 
 async function deletePendaki(id) {
-    showConfirm("HAPUS DATA", "Hapus permanen data pendaki ini dari riwayat?", async () => {
-        try {
-            // Resolve id_perangkat dulu (sebelum dihapus dari pendakiById)
-            // supaya bisa clear polyline + marker dari peta utama setelah
-            // delete sukses.
-            const p = pendakiById.get(id);
-            const idAlat = p ? p.id_perangkat : null;
+    const p = pendakiById.get(id);
+    const nama = p ? p.nama_pendaki : `ID ${id}`;
+    showConfirm(
+        "HAPUS DATA",
+        `Hapus permanen data pendaki "${nama}" dari riwayat? Aksi ini tidak bisa dibatalkan.`,
+        async () => {
+            try {
+                // Resolve id_perangkat dulu (sebelum dihapus dari pendakiById)
+                // supaya bisa clear polyline + marker dari peta utama setelah
+                // delete sukses.
+                const idAlat = p ? p.id_perangkat : null;
 
-            const res = await apiFetch(`/api/pendaki/${id}`, { method: "DELETE" });
-            if (res.ok) {
-                showToast("Data dihapus", "success");
-                if (idAlat) {
-                    clearHistoryPath(idAlat);
-                    clearLiveMarker(idAlat);
+                const res = await apiFetch(`/api/pendaki/${id}`, { method: "DELETE" });
+                if (res.ok) {
+                    showToast("Data dihapus", "success");
+                    if (idAlat) {
+                        clearHistoryPath(idAlat);
+                        clearLiveMarker(idAlat);
+                    }
+                    fetchHistory();
+                    renderHikerCards();
                 }
-                fetchHistory();
-                renderHikerCards();
-            }
-            else if (res.status === 404)   { showToast("Pendaki tidak ditemukan", "error"); }
-            else                           { showToast("Gagal menghapus", "error"); }
-        } catch (e) { showToast("Gagal menghapus", "error"); }
-    });
+                else if (res.status === 404)   { showToast("Pendaki tidak ditemukan", "error"); }
+                else                           { showToast("Gagal menghapus", "error"); }
+            } catch (e) { showToast("Gagal menghapus", "error"); }
+        }
+    );
 }
 
 let editingId = null;
@@ -778,25 +848,19 @@ function openEditModal(p) {
     const idEsc = escapeHtml(p.id_perangkat);
     select.innerHTML = `<option value="${idEsc}">${idEsc} (Saat ini)</option>`;
 
-    document.getElementById('modal-registrasi').style.display = 'flex';
-    document.getElementById('btn-simpan').onclick = submitEdit;
+    // Reset error state visual.
+    ['reg-nama', 'reg-telp', 'reg-id-perangkat'].forEach(idAttr => {
+        const el = document.getElementById(idAttr);
+        if (el) el.removeAttribute('aria-invalid');
+    });
+
+    openOverlayModal('modal-registrasi');
 }
 
+// `submitEdit` dipertahankan untuk kompat — sekarang delegate ke
+// `submitRegistrasi` yang sudah handle isEdit (editingId !== null).
 async function submitEdit() {
-    const nama = document.getElementById('reg-nama').value;
-    const idAlat = document.getElementById('reg-id-perangkat').value;
-    const telp = document.getElementById('reg-telp').value;
-
-    try {
-        const res = await apiFetch(`/api/pendaki/${editingId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nama_pendaki: nama, id_perangkat: idAlat, telepon_darurat: telp })
-        });
-        if (res.ok)                  { showToast("Perubahan disimpan", "success"); closeModal(); fetchPendakiAktif(); fetchHistory(); }
-        else if (res.status === 404) { showToast("Pendaki tidak ditemukan", "error"); }
-        else                         { showToast("Gagal menyimpan", "error"); }
-    } catch (e) { showToast("Gagal menyimpan", "error"); }
+    return submitRegistrasi();
 }
 
 function exportCSV() {
@@ -1267,7 +1331,8 @@ async function viewJourneyDetail(p) {
         durEl.innerText = parts.join(" ");
     }
 
-    document.getElementById('modal-detail').style.display = 'flex';
+    document.getElementById('modal-detail').removeAttribute('hidden');
+    openOverlayModal('modal-detail');
 
     if (!miniMap) {
         miniMap = L.map("mini-map").setView(posJagaLatLng, 13);
@@ -1311,7 +1376,7 @@ async function viewJourneyDetail(p) {
     }, 300);
 }
 
-function closeDetailModal() { document.getElementById('modal-detail').style.display = 'none'; }
+function closeDetailModal() { closeOverlayModal('modal-detail'); }
 
 // ====================================================================
 // SEARCH & FILTER (Task 3.12)
@@ -1432,6 +1497,102 @@ async function fetchInitialSensorData() {
 }
 
 // ====================================================================
+// MODAL UTILS — a11y (focus trap, ESC-to-close, busy state)
+// --------------------------------------------------------------------
+// Helper umum untuk semua modal. Menggantikan toggling display:flex
+// langsung di banyak tempat. Manfaat:
+//   - ESC tombol: handler global tutup modal teratas.
+//   - Focus trap: Tab/Shift-Tab tidak keluar modal saat sedang dibuka.
+//   - Auto-focus: input pertama di-fokus saat modal dibuka.
+//   - Restore focus: tombol/element pemicu di-restore saat modal close.
+// ====================================================================
+const __modalStack = [];
+const __modalLastFocus = new WeakMap();
+
+function modalFocusables(root) {
+    return Array.from(root.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(el => el.offsetParent !== null || el.getClientRects().length);
+}
+
+function openOverlayModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    __modalLastFocus.set(el, document.activeElement);
+    el.style.display = 'flex';
+    el.removeAttribute('hidden');
+    __modalStack.push(el);
+    // Auto-focus elemen interaktif pertama (mis. input nama).
+    setTimeout(() => {
+        const f = modalFocusables(el);
+        if (f.length) f[0].focus();
+    }, 30);
+}
+
+function closeOverlayModal(id) {
+    const el = typeof id === 'string' ? document.getElementById(id) : id;
+    if (!el) return;
+    el.style.display = 'none';
+    el.setAttribute('hidden', '');
+    const idx = __modalStack.indexOf(el);
+    if (idx !== -1) __modalStack.splice(idx, 1);
+    const prev = __modalLastFocus.get(el);
+    if (prev && typeof prev.focus === 'function') {
+        try { prev.focus(); } catch (e) {}
+    }
+}
+
+document.addEventListener('keydown', (ev) => {
+    // ESC menutup modal teratas (kecuali login — login wajib selesai).
+    if (ev.key === 'Escape' && __modalStack.length) {
+        const top = __modalStack[__modalStack.length - 1];
+        if (top.id === 'modal-login') return;
+        closeOverlayModal(top);
+    }
+    // Focus trap di modal teratas.
+    if (ev.key === 'Tab' && __modalStack.length) {
+        const top = __modalStack[__modalStack.length - 1];
+        const f = modalFocusables(top);
+        if (!f.length) return;
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (ev.shiftKey && document.activeElement === first) {
+            ev.preventDefault();
+            last.focus();
+        } else if (!ev.shiftKey && document.activeElement === last) {
+            ev.preventDefault();
+            first.focus();
+        }
+    }
+});
+
+// ====================================================================
+// BUSY BUTTON HELPERS — anti double-submit + spinner.
+// ====================================================================
+function setBusy(btn, busy, busyLabel) {
+    if (!btn) return;
+    if (busy) {
+        btn.dataset.busy = 'true';
+        btn.disabled = true;
+        if (busyLabel) {
+            const label = btn.querySelector('.btn-label');
+            if (label) {
+                btn.dataset.prevLabel = label.textContent;
+                label.textContent = busyLabel;
+            }
+        }
+    } else {
+        delete btn.dataset.busy;
+        btn.disabled = false;
+        const label = btn.querySelector('.btn-label');
+        if (label && btn.dataset.prevLabel) {
+            label.textContent = btn.dataset.prevLabel;
+            delete btn.dataset.prevLabel;
+        }
+    }
+}
+
+// ====================================================================
 // INIT
 // ====================================================================
 // Skeleton placeholder awal — supaya operator yang baru refresh
@@ -1449,8 +1610,25 @@ async function fetchInitialSensorData() {
 setInterval(checkStatuses, 5000);
 // Polling /api/sensor/latest di-handle oleh `schedulePolling()` lewat
 // `connectWebSocket()` (interval menyesuaikan kondisi WS). Polling
-// pendaki tetap konstan di interval lama.
-setInterval(fetchPendakiAktif, 10000);
+// pendaki tetap konstan di interval lama, tapi dihormati Page
+// Visibility API — saat tab hidden, polling dipause supaya hemat
+// network + battery laptop operator.
+let __pendakiPollTimer = setInterval(fetchPendakiAktif, 10000);
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        if (__pendakiPollTimer) {
+            clearInterval(__pendakiPollTimer);
+            __pendakiPollTimer = null;
+        }
+    } else {
+        if (!__pendakiPollTimer) {
+            __pendakiPollTimer = setInterval(fetchPendakiAktif, 10000);
+            // Refetch sekali saat tab kembali fokus supaya UI tidak stale.
+            fetchPendakiAktif();
+            fetchInitialSensorData();
+        }
+    }
+});
 
 checkStatuses();
 fetchInitialSensorData();
@@ -1509,6 +1687,70 @@ document.addEventListener('DOMContentLoaded', () => {
     // bergantung apakah token sudah tersimpan.
     const loginForm = document.getElementById('login-form');
     if (loginForm) loginForm.addEventListener('submit', handleLoginSubmit);
+
+    // Password toggle (login).
+    const pwToggle = document.getElementById('login-password-toggle');
+    if (pwToggle) {
+        pwToggle.addEventListener('click', () => {
+            const input = document.getElementById('login-password');
+            if (!input) return;
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            pwToggle.setAttribute('aria-pressed', String(!showing));
+            pwToggle.setAttribute('aria-label', showing ? 'Tampilkan password' : 'Sembunyikan password');
+            const iconSpan = pwToggle.querySelector('[data-icon]');
+            if (iconSpan) {
+                iconSpan.setAttribute('data-icon', showing ? 'eye' : 'eyeOff');
+                iconSpan.innerHTML = ICON(showing ? 'eye' : 'eyeOff', 18);
+            }
+        });
+    }
+
+    // Registrasi form submit (anti double-submit + validation).
+    const regForm = document.getElementById('form-registrasi');
+    if (regForm) regForm.addEventListener('submit', submitRegistrasi);
+
+    // Tombol modal-close umum (data-modal-close="<id>").
+    document.querySelectorAll('[data-modal-close]').forEach(btn => {
+        btn.addEventListener('click', () => closeOverlayModal(btn.getAttribute('data-modal-close')));
+    });
+
+    // Notification request prompt buttons.
+    const allowBtn = document.querySelector('[data-action="notif-allow"]');
+    if (allowBtn) allowBtn.addEventListener('click', requestNotif);
+    const dismissBtn = document.querySelector('[data-action="notif-dismiss"]');
+    if (dismissBtn) dismissBtn.addEventListener('click', dismissNotifPrompt);
+
+    // Search bar — debounce 250ms + tombol clear.
+    const searchInput = document.getElementById('search-input');
+    const searchClear = document.getElementById('search-clear');
+    let searchTimer = null;
+    if (searchInput) {
+        const updateClear = () => {
+            if (searchClear) searchClear.hidden = !searchInput.value;
+        };
+        searchInput.addEventListener('input', () => {
+            updateClear();
+            if (searchTimer) clearTimeout(searchTimer);
+            searchTimer = setTimeout(applyFilters, 250);
+        });
+        updateClear();
+    }
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+            }
+            searchClear.hidden = true;
+            applyFilters();
+        });
+    }
+
+    // Filter radios — gunakan event delegation.
+    document.querySelectorAll('input[name="filter"]').forEach(r => {
+        r.addEventListener('change', applyFilters);
+    });
 
     // Initial gate: kalau belum punya token, tampilkan login modal +
     // sembunyikan logout. Sebaliknya, hide modal + show logout.

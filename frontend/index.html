@@ -85,7 +85,7 @@
                  Hidden by default via attribute `hidden`; di-show oleh
                  `updateAlertBanner(outsideCount)` saat ≥1 pendaki keluar
                  buffer. Klik banner → scroll ke kartu alert pertama. -->
-            <div id="map-alert-banner" class="map-alert-banner" hidden role="button" tabindex="0" aria-label="Lihat pendaki keluar koridor">
+            <div id="map-alert-banner" class="map-alert-banner" hidden role="status" aria-live="assertive" aria-atomic="true" tabindex="0" aria-label="Lihat pendaki keluar koridor">
                 <span class="map-alert-banner__icon" data-icon="warning"></span>
                 <span id="map-alert-banner-text" class="map-alert-banner__text">0 pendaki di luar koridor</span>
                 <button type="button" class="map-alert-banner__cta">Lihat</button>
@@ -117,11 +117,14 @@
             </div>
 
             <div class="neo-card filter-bar">
-                <input type="text" id="search-input" class="neo-input" placeholder="Cari nama pendaki..." onkeyup="searchPendaki()">
-                <div class="filter-bar__radios">
-                    <label><input type="radio" name="filter" value="Semua" checked onclick="filterHistory()"> Semua</label>
-                    <label><input type="radio" name="filter" value="Mendaki" onclick="filterHistory()"> Mendaki</label>
-                    <label><input type="radio" name="filter" value="Sudah Turun" onclick="filterHistory()"> Selesai</label>
+                <div class="search-wrap">
+                    <input type="text" id="search-input" class="neo-input" placeholder="Cari nama pendaki..." aria-label="Cari pendaki">
+                    <button type="button" id="search-clear" class="search-clear" aria-label="Bersihkan pencarian" hidden>&times;</button>
+                </div>
+                <div class="filter-bar__radios" role="radiogroup" aria-label="Filter status pendaki">
+                    <label><input type="radio" name="filter" value="Semua" checked> Semua</label>
+                    <label><input type="radio" name="filter" value="Mendaki"> Mendaki</label>
+                    <label><input type="radio" name="filter" value="Sudah Turun"> Selesai</label>
                 </div>
             </div>
 
@@ -146,37 +149,50 @@
         </main>
 
         <!-- MODAL REGISTRASI -->
-        <div id="modal-registrasi" class="modal-overlay">
+        <div id="modal-registrasi" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
             <div class="modal-content">
                 <h2 id="modal-title" class="modal-title">Registrasi Pendaki</h2>
 
-                <div class="form-group">
-                    <label class="form-label">Nama Lengkap</label>
-                    <input type="text" id="reg-nama" class="neo-input" placeholder="Contoh: Ahmad Subarjo">
-                </div>
+                <form id="form-registrasi" class="form-registrasi" novalidate>
+                    <div class="form-group">
+                        <label class="form-label" for="reg-nama">Nama Lengkap</label>
+                        <input type="text" id="reg-nama" name="nama" class="neo-input"
+                               placeholder="Contoh: Ahmad Subarjo"
+                               minlength="2" maxlength="80"
+                               autocomplete="name" required>
+                        <small class="form-hint" id="hint-nama">Minimal 2 karakter, maks 80.</small>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">ID Perangkat</label>
-                    <select id="reg-id-perangkat" class="neo-input input-select-white">
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label" for="reg-id-perangkat">ID Perangkat</label>
+                        <select id="reg-id-perangkat" name="id_perangkat" class="neo-input input-select-white" required>
+                            <option value="">-- Pilih Perangkat --</option>
+                        </select>
+                    </div>
 
-                <div class="form-group form-group--last">
-                    <label class="form-label">Telepon Darurat</label>
-                    <input type="text" id="reg-telp" class="neo-input" placeholder="0812xxxxxx">
-                </div>
+                    <div class="form-group form-group--last">
+                        <label class="form-label" for="reg-telp">Telepon Darurat</label>
+                        <input type="tel" id="reg-telp" name="telepon" class="neo-input"
+                               placeholder="0812xxxxxx"
+                               inputmode="tel"
+                               pattern="^[0-9+()\-\s]{8,20}$"
+                               minlength="8" maxlength="20"
+                               autocomplete="tel" required>
+                        <small class="form-hint" id="hint-telp">8–20 digit. Boleh angka, +, -, ( ).</small>
+                    </div>
 
-                <div class="modal-form-actions">
-                    <button id="btn-simpan" class="neo-btn neo-btn-green btn-flex"><span data-icon="checkSimple"></span> SIMPAN DATA</button>
-                    <button class="neo-btn neo-btn-red" onclick="closeModal()">BATAL</button>
-                </div>
+                    <div class="modal-form-actions">
+                        <button id="btn-simpan" type="submit" class="neo-btn neo-btn-green btn-flex"><span data-icon="checkSimple"></span> <span class="btn-label">SIMPAN DATA</span></button>
+                        <button type="button" class="neo-btn neo-btn-red" data-modal-close="modal-registrasi">BATAL</button>
+                    </div>
+                </form>
             </div>
         </div>
 
         <!-- MODAL DETAIL JALUR -->
-        <div id="modal-detail" class="modal-overlay">
+        <div id="modal-detail" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-detail-title" hidden>
             <div class="modal-content modal-content--lg">
-                <h2 class="modal-title modal-title--detail">Detail Perjalanan</h2>
+                <h2 class="modal-title modal-title--detail" id="modal-detail-title">Detail Perjalanan</h2>
 
                 <div class="dashboard-grid modal-detail-grid">
                     <div id="mini-map" class="modal-detail-mini"></div>
@@ -197,28 +213,28 @@
                 </div>
 
                 <div class="modal-detail-footer">
-                    <button class="neo-btn neo-btn-blue" onclick="closeDetailModal()">TUTUP</button>
+                    <button class="neo-btn neo-btn-blue" type="button" data-modal-close="modal-detail">TUTUP</button>
                 </div>
             </div>
         </div>
 
         <!-- NOTIFICATION REQUEST PROMPT -->
-        <div id="notif-request" class="notification-request">
+        <div id="notif-request" class="notification-request" role="dialog" aria-label="Aktifkan notifikasi browser">
             <p class="notif-prompt-text"><span data-icon="bell"></span> Aktifkan notifikasi browser untuk peringatan keluar jalur?</p>
             <div class="notif-prompt-actions">
-                <button class="neo-btn neo-btn-sm neo-btn-green" onclick="requestNotif()">Izinkan</button>
-                <button class="neo-btn neo-btn-sm neo-btn-red" onclick="dismissNotifPrompt()">Nanti</button>
+                <button type="button" class="neo-btn neo-btn-sm neo-btn-green" data-action="notif-allow">Izinkan</button>
+                <button type="button" class="neo-btn neo-btn-sm neo-btn-red" data-action="notif-dismiss">Nanti</button>
             </div>
         </div>
 
         <!-- MODAL KONFIRMASI -->
-        <div id="modal-confirm" class="modal-overlay">
+        <div id="modal-confirm" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-msg" hidden>
             <div class="modal-content modal-content--sm">
                 <h2 id="confirm-title" class="modal-title modal-title--confirm">KONFIRMASI</h2>
                 <p id="confirm-msg" class="confirm-msg"></p>
                 <div class="modal-form-actions">
-                    <button id="confirm-yes" class="neo-btn neo-btn-red btn-flex">YA, LANJUTKAN</button>
-                    <button class="neo-btn btn-flex" onclick="closeConfirm()">BATAL</button>
+                    <button id="confirm-yes" type="button" class="neo-btn neo-btn-red btn-flex">YA, LANJUTKAN</button>
+                    <button type="button" class="neo-btn btn-flex" data-modal-close="modal-confirm">BATAL</button>
                 </div>
             </div>
         </div>
@@ -228,31 +244,42 @@
              Tampil di atas semua konten saat token belum ada di
              localStorage atau token invalid (401). Form simple:
              username + password → POST /api/login → simpan token. -->
-        <div id="modal-login" class="modal-overlay modal-overlay--auth">
+        <div id="modal-login" class="modal-overlay modal-overlay--auth" role="dialog" aria-modal="true" aria-labelledby="login-heading">
             <div class="modal-content modal-content--auth">
                 <div class="login-brand">
                     <span class="login-brand__icon" data-icon="mountain"></span>
                     <span class="login-brand__name">ALTIVEX</span>
                 </div>
-                <h2 class="modal-title login-heading">Login Basecamp</h2>
+                <h2 id="login-heading" class="modal-title login-heading">Login Basecamp</h2>
                 <p class="login-subtitle">Masuk untuk mengakses dashboard pemantauan pendaki.</p>
 
-                <form id="login-form" class="login-form" autocomplete="on">
+                <form id="login-form" class="login-form" autocomplete="on" novalidate>
                     <div class="form-group">
                         <label class="form-label" for="login-username">Username</label>
                         <input type="text" id="login-username" name="username" class="neo-input" autocomplete="username" required>
                     </div>
                     <div class="form-group form-group--last">
                         <label class="form-label" for="login-password">Password</label>
-                        <input type="password" id="login-password" name="password" class="neo-input" autocomplete="current-password" required>
+                        <div class="password-wrap">
+                            <input type="password" id="login-password" name="password" class="neo-input" autocomplete="current-password" required>
+                            <button type="button" id="login-password-toggle" class="password-toggle" aria-label="Tampilkan password" aria-pressed="false">
+                                <span data-icon="eye"></span>
+                            </button>
+                        </div>
                     </div>
-                    <p id="login-error" class="login-error" hidden></p>
-                    <button type="submit" class="neo-btn neo-btn-green btn-flex"><span data-icon="unlock"></span> MASUK</button>
+                    <p id="login-error" class="login-error" role="alert" hidden></p>
+                    <button type="submit" class="neo-btn neo-btn-green btn-flex"><span data-icon="unlock"></span> <span class="btn-label">MASUK</span></button>
                 </form>
             </div>
         </div>
 
-        <div id="toast-container"></div>
+        <!-- Toast container — aria-live polite supaya screen reader
+             baca pesan sukses/error tanpa interrupt fokus operator. -->
+        <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+        <!-- Skip link — keyboard user bisa lompat langsung ke konten utama.
+             Visible saat fokus, hidden secara visual default. -->
+        <a class="skip-link" href="#tab-live">Lewati ke konten</a>
 
         <script src="dashboard.js"></script>
     </body>

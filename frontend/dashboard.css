@@ -566,6 +566,24 @@ header {
     align-items: center;
     justify-content: center;
     z-index: 2000;
+    /* Animasi fade-in saat modal di-show oleh JS (set display:flex). */
+    animation: modal-fade-in 160ms ease-out;
+}
+
+.modal-overlay > .modal-content {
+    /* Slide-up + scale ringan supaya modal terasa "muncul" bukan
+       langsung pop. Reduced-motion: animasi dimatikan di rule terpisah
+       di akhir file. */
+    animation: modal-pop-in 200ms ease-out;
+}
+
+@keyframes modal-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes modal-pop-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-content {
@@ -1308,5 +1326,145 @@ body.dark-mode .input-select-white option {
     }
     .modal-form-actions {
         flex-direction: column;
+    }
+}
+
+/* ---------- A11Y & UX UTILITY (skip link, search clear, password toggle) ---------- */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 8px;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: var(--ink);
+    font-weight: 800;
+    text-decoration: none;
+    border: 3px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    z-index: 5000;
+}
+.skip-link:focus {
+    left: 8px;
+    outline: 3px solid var(--info);
+    outline-offset: 2px;
+}
+
+/* Focus-visible global — keyboard navigation harus selalu jelas. */
+:focus-visible {
+    outline: 3px solid var(--info);
+    outline-offset: 2px;
+}
+
+/* Search bar wrapper supaya tombol clear bisa di-overlay. */
+.search-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+.search-wrap .neo-input {
+    padding-right: 40px;
+    width: 100%;
+}
+.search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.search-clear:hover { color: var(--ink); background: var(--gray); }
+
+/* Password toggle (login). */
+.password-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+}
+.password-wrap .neo-input {
+    flex: 1;
+    padding-right: 44px;
+}
+.password-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.password-toggle:hover { color: var(--ink); background: var(--gray); }
+
+/* Form hint (subtitle kecil di bawah input). */
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Invalid state pakai aria-invalid="true" yang di-set oleh JS form
+   validation. Border merah, shadow merah halus, tidak menabrak shadow
+   neobrutalism global. */
+.neo-input[aria-invalid="true"] {
+    border-color: var(--danger);
+    box-shadow: 3px 3px 0 0 var(--danger);
+}
+
+/* Submit button busy state — tombol disabled tapi tetap punya
+   spinner kecil yang berputar di icon slot. JS men-set
+   `data-busy="true"` saat request berjalan. */
+.neo-btn[data-busy="true"] {
+    opacity: 0.7;
+    cursor: progress;
+    pointer-events: none;
+}
+.neo-btn[data-busy="true"] .icon {
+    animation: skeleton-spin 1s linear infinite;
+}
+
+/* Empty state cell pada tabel riwayat. */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px !important;
+    color: var(--muted);
+}
+.empty-state__icon {
+    margin-bottom: 8px;
+    color: var(--muted);
+}
+.empty-state__title {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+}
+.empty-state__sub {
+    font-size: 0.85rem;
+}
+
+/* Reduced motion — hormati preferensi user. */
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay,
+    .modal-overlay > .modal-content,
+    .skeleton-card,
+    .skeleton-card .icon,
+    .neo-btn[data-busy="true"] .icon {
+        animation: none !important;
     }
 }
