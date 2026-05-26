@@ -1124,6 +1124,26 @@ body.dark-mode .input-select-white option {
 @media (max-width: 1000px) {
     .dashboard-grid { grid-template-columns: 1fr; height: auto; }
     #map { height: 400px; }
+
+    /* Modal Detail Perjalanan: parent grid kolaps ke 1 kolom (`height:
+       auto` dari `.dashboard-grid` di atas). Tanpa override ini,
+       `.modal-detail-mini { height: 100% }` resolve ke 0px → Leaflet
+       render canvas kosong di mobile/tablet (peta history "tidak
+       muncul"). Beri tinggi eksplisit + lebar full supaya canvas
+       Leaflet punya area paint, lalu beri stats panel tinggi auto
+       supaya tidak ke-clamp. */
+    .modal-detail-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 16px;
+    }
+    .modal-detail-mini {
+        height: 320px;
+        width: 100%;
+    }
+    .modal-detail-stats {
+        height: auto;
+    }
 }
 
 @media (max-width: 600px) {
@@ -1140,6 +1160,23 @@ body.dark-mode .input-select-white option {
     #map { height: 55vh; min-height: 300px; }
     .dashboard-grid { grid-template-columns: 1fr; }
     .sidebar { height: auto; max-height: 400px; }
+
+    /* Modal Detail Perjalanan di phone: kasih tinggi eksplisit untuk
+       mini-map supaya Leaflet canvas tidak collapse ke 0. Sebelumnya
+       peta history "tidak muncul" di mobile karena parent grid
+       di-override `.dashboard-grid { height: auto }`. */
+    .modal-detail-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 14px;
+    }
+    .modal-detail-mini {
+        height: 280px;
+        width: 100%;
+    }
+    .modal-detail-stats {
+        height: auto;
+    }
 
     .hide-mobile { display: none; }
 

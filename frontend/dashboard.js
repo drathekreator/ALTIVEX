@@ -1296,6 +1296,17 @@ async function viewJourneyDetail(p) {
                 document.getElementById('stat-dist').innerText = "0";
                 miniMap.setView(posJagaLatLng, 15);
             }
+            // Safety-net untuk mobile: di phone parent grid di-override
+            // `height: auto` (lihat `.modal-detail-grid` di dashboard.css
+            // @media), sehingga container `#mini-map` baru dapat tinggi
+            // final SETELAH layout reflow modal selesai. Panggil
+            // `invalidateSize` sekali lagi di RAF + 1 frame berikut agar
+            // Leaflet repaint canvas dengan ukuran benar — tanpa ini,
+            // peta history kelihatan kosong walau polyline sudah di-add.
+            requestAnimationFrame(() => {
+                miniMap.invalidateSize();
+                setTimeout(() => miniMap.invalidateSize(), 250);
+            });
         } catch (e) { console.error(e); }
     }, 300);
 }
