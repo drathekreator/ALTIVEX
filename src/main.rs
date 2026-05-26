@@ -156,9 +156,9 @@ fn sanitize_battery(b: Option<i16>) -> Option<i16> {
 //
 // Basecamp ESP32 subscribe ke `altivex/basecamp/cmd` dan maintain
 // HashSet alert aktif sendiri. Buzzer continuous selama set non-empty.
-// Tombol acknowledge di basecamp kirim back via topic `altivex/
-// basecamp/ack` (dipakai backend untuk reset notification flag tapi
-// alert tetap "active" sampai kondisi clear).
+// Buzzer hanya mati saat backend kirim cmd "OFF" untuk seluruh alert
+// terkait (pendaki kembali ke jalur, baterai pulih, atau sinyal
+// pulih). Tidak ada mekanisme silence/acknowledge manual.
 // ============================================================================
 
 /// Kategori alert untuk komunikasi backend ↔ basecamp ESP32.
@@ -1220,21 +1220,6 @@ async fn start_mqtt_client(
             continue;
         }
 
-        // Sekalian subscribe ke topic acknowledge dari basecamp ESP32.
-        // Saat penjaga tekan tombol fisik, basecamp publish ke
-        // `altivex/basecamp/ack` dengan payload `{"id_perangkat": "..."}`
-        // atau `{"all": true}` — backend reset notification flag tapi
-        // alert tetap "active" di hub sampai kondisi clear.
-        if let Err(e) = client
-            .subscribe("altivex/basecamp/ack", QoS::AtLeastOnce)
-            .await
-        {
-            println!(
-                "⚠️  Gagal queue subscribe basecamp/ack: {:?} (alert ack tidak akan bekerja)",
-                e
-            );
-        }
-
         // Daftarkan client ini ke AlertHub supaya alert publisher bisa
         // dipakai dari berbagai handler. Re-set tiap iterasi outer loop
         // (pas reconnect) supaya stale client tidak dipakai.
@@ -1259,24 +1244,12 @@ async fn start_mqtt_client(
                     }
 
                     let payload = publish.payload;
-                    let topic = publish.topic.as_str();
-
-                    // Routing: dispatch berdasarkan topic. Sensor data
-                    // dari pendaki masuk via altivex/sensor/data; ack
-                    // dari basecamp ESP32 masuk via altivex/basecamp/ack.
-                    if topic == "altivex/basecamp/ack" {
-                        // Future hook: kalau penjaga tekan tombol, basecamp
-                        // publish payload kecil ke topic ini supaya backend
-                        // bisa log "ack diterima". Saat ini basecamp ESP32
-                        // sudah handle silence-buzzer secara lokal (tidak
-                        // butuh round-trip), tapi log ini berguna untuk
-                        // observability — penjaga sebenernya pernah ack atau
-                        // ngga.
-                        let sample: String = String::from_utf8_lossy(&payload)
-                            .chars().take(120).collect();
-                        println!("🔕 Basecamp ACK diterima: {}", sample);
-                        continue;
-                    }
+                    let _topic = publish.topic.as_str();
+                    // Hanya satu topic yang di-subscribe sekarang
+                    // (altivex/sensor/data). Topic ack dari basecamp
+                    // dihilangkan karena tombol acknowledge fisik
+                    // tidak lagi dipakai per ketentuan baru — buzzer
+                    // hanya mati saat backend kirim cmd OFF.
 
                     if let Ok(data) = serde_json::from_slice::<IncomingData>(&payload) {
                         // Visibility log — sengaja ringkas (tanpa payload

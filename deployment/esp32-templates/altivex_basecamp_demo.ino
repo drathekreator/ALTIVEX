@@ -1,8 +1,16 @@
 // =====================================================================
-// ALTIVEX BASECAMP DEMO — ESP32 di pos pendakian (Warung Tepi Hutan)
+// ALTIVEX BASECAMP — ESP32 di pos pendakian
 // ---------------------------------------------------------------------
-// Fungsi: terima alert otomatis dari server dashboard via MQTT,
-// nyalakan buzzer continuous, sampai penjaga tekan tombol acknowledge.
+// Fungsi: terima alert otomatis dari backend via MQTT, nyalakan buzzer
+// continuous selama ada minimal satu alert aktif. Buzzer otomatis mati
+// HANYA ketika backend mengirim cmd "OFF" (pendaki kembali ke jalur,
+// baterai pulih, atau sinyal kembali).
+//
+// PERUBAHAN PENTING (post-spec-revision):
+//   Tombol acknowledge fisik DIHAPUS dari desain. Ketentuan baru:
+//   buzzer terus berbunyi sampai pendaki benar-benar kembali ke
+//   jalurnya — penjaga TIDAK boleh men-silent buzzer secara manual.
+//   Ini memastikan tidak ada alert yang dimute lalu terlupakan.
 //
 // Trigger alert (di-decide otomatis oleh backend):
 //   - OUT_OF_GEOFENCE : pendaki keluar koridor jalur
@@ -10,14 +18,11 @@
 //   - SIGNAL_LOST     : pendaki status Mendaki >10 menit gak update
 //
 // State machine basecamp (lokal):
-//   - HashSet alert aktif: {(id_perangkat, kind)} → buzzer on/off
-//     berdasarkan |set| > 0
-//   - Tombol acknowledge fisik: silence buzzer (set silenced=true),
-//     TAPI alert tetap di-track
-//   - Alert baru masuk setelah silence → re-arm buzzer
-//   - Backend kirim cmd "OFF" pas pendaki balik ke koridor / battery
-//     pulih / signal pulih → hapus dari set; buzzer mati otomatis
-//     kalau set kosong
+//   - Set alert aktif: {(id_perangkat, kind)} → buzzer on selama
+//     |set| > 0
+//   - Backend kirim cmd "ON"  → tambah ke set, buzzer mulai bunyi
+//   - Backend kirim cmd "OFF" → hapus dari set; kalau set kosong,
+//     buzzer mati otomatis
 //
 // Library yang perlu di-install via Arduino IDE Library Manager:
 //   1. PubSubClient by Nick O'Leary       (>= 2.8)
@@ -26,7 +31,6 @@
 // Hardware:
 //   - ESP32 (board apa saja yang punya WiFi)
 //   - Buzzer aktif (active high) di GPIO 13
-//   - Tombol push button momentary di GPIO 14 → GND (pakai INPUT_PULLUP)
 //   - LED status di GPIO 2 (built-in di mayoritas dev board)
 // =====================================================================
 
@@ -54,23 +58,16 @@ const char*    BASECAMP_ID     = "BASECAMP-CIFOR";
 
 // Topic yang di-subscribe (input dari backend)
 const char*    TOPIC_CMD       = "altivex/basecamp/cmd";
-// Topic untuk publish ack (informasi ke backend bahwa penjaga
-// sudah tekan tombol; backend hanya log, tidak penting fungsional)
-const char*    TOPIC_ACK       = "altivex/basecamp/ack";
 
 // ====================================================================
 // 3. HARDWARE PIN
 // ====================================================================
 const uint8_t BUZZER_PIN       = 13;   // Active high buzzer
-const uint8_t ACK_BUTTON_PIN   = 14;   // Tombol momentary push
 const uint8_t STATUS_LED_PIN   = 2;    // Built-in LED
 
-// Pola buzzer continuous: 0.5s on / 0.5s off
+// Pola buzzer continuous: 0.5s on / 0.5s off selama ada alert aktif
 const uint32_t BUZZ_ON_MS      = 500;
 const uint32_t BUZZ_OFF_MS     = 500;
-
-// Debounce tombol
-const uint32_t BUTTON_DEBOUNCE_MS = 50;
 
 // Reconnect intervals
 const uint32_t WIFI_CHECK_INTERVAL_MS    = 5000;
@@ -90,18 +87,9 @@ const uint8_t MAX_ALERTS = 32;
 String activeAlerts[MAX_ALERTS];
 uint8_t activeAlertCount = 0;
 
-// Penjaga sudah ack? Kalau true, buzzer silent walau set non-empty.
-// Reset ke false otomatis kalau alert baru masuk (state ON dengan
-// kombinasi (id, kind) yang BELUM ada di set).
-bool silenced = false;
-
 // Buzzer state machine
 bool     buzzerOn        = false;
 uint32_t lastBuzzToggle  = 0;
-
-// Tombol debounce
-int      lastButtonState = HIGH;
-uint32_t lastButtonChange = 0;
 
 // LED + reconnect
 uint32_t lastWifiCheckMs = 0;
@@ -173,8 +161,7 @@ int findAlert(const String& key) {
 }
 
 /// Tambah alert ke set. Return true kalau benar-benar baru
-/// (bukan duplicate). Caller pakai return value untuk decide
-/// re-arm buzzer atau tidak.
+/// (bukan duplicate).
 bool addAlert(const String& key) {
     if (findAlert(key) >= 0) return false;
     if (activeAlertCount >= MAX_ALERTS) {
@@ -230,66 +217,28 @@ void onMqttMessage(char* topic, uint8_t* payload, unsigned int length) {
     String key = String(idPerangkat) + "|" + String(kind);
 
     if (strcmp(state, "ON") == 0) {
-        bool isNew = addAlert(key);
+        addAlert(key);
         Serial.printf("🚨 [%s] %s — %s (%s)\n",
                       kind, idPerangkat, nama, reason);
-        // Re-arm: alert baru masuk → cancel silence supaya buzzer
-        // menyala lagi. Ini decision dari user (Q3): kalau pendaki
-        // sebelumnya keluar trail buang air sebentar, ack 1x silence,
-        // tapi kalau dia keluar LAGI, kita mau penjaga tau lagi.
-        if (isNew && silenced) {
-            silenced = false;
-            Serial.println("🔔 Re-arm buzzer (silence dicancel oleh alert baru)");
-        }
     } else if (strcmp(state, "OFF") == 0) {
         removeAlert(key);
         Serial.printf("✅ [%s] %s — clear\n", kind, idPerangkat);
-        // Kalau set jadi kosong, otomatis reset silenced flag
-        // supaya alert berikutnya start fresh.
-        if (activeAlertCount == 0) {
-            silenced = false;
-        }
     } else {
         Serial.printf("⚠️  Unknown state '%s'\n", state);
     }
 }
 
 // ====================================================================
-// Tombol acknowledge — debounced, edge-triggered
-// ====================================================================
-void handleAckButton() {
-    int reading = digitalRead(ACK_BUTTON_PIN);
-    if (reading != lastButtonState) {
-        lastButtonChange = millis();
-    }
-    if ((millis() - lastButtonChange) > BUTTON_DEBOUNCE_MS) {
-        // Stable state — kalau LOW (button pressed) dan sebelumnya HIGH,
-        // ini falling edge → trigger ack.
-        if (reading == LOW && lastButtonState == HIGH) {
-            if (activeAlertCount > 0 && !silenced) {
-                silenced = true;
-                Serial.printf("🔕 ACK button pressed — buzzer silenced "
-                              "(set masih %u alert aktif)\n", activeAlertCount);
-                // Publish info ke backend (best-effort, gak block)
-                if (mqtt.connected()) {
-                    char ackPayload[120];
-                    snprintf(ackPayload, sizeof(ackPayload),
-                             "{\"basecamp\":\"%s\",\"silenced\":true,"
-                             "\"active_count\":%u}",
-                             BASECAMP_ID, activeAlertCount);
-                    mqtt.publish(TOPIC_ACK, ackPayload);
-                }
-            }
-        }
-    }
-    lastButtonState = reading;
-}
-
-// ====================================================================
 // Buzzer state machine
+// ---------------------------------------------------------------------
+// Buzzer berbunyi (pulsing 0.5s on / 0.5s off) SELAMA ada minimal
+// satu alert aktif di set. Tidak ada mekanisme silence/acknowledge —
+// satu-satunya cara mematikan buzzer adalah pendaki kembali ke
+// kondisi normal (backend kirim cmd "OFF" untuk seluruh alert
+// terkait, sehingga set jadi kosong).
 // ====================================================================
 void updateBuzzer() {
-    bool shouldBuzz = (activeAlertCount > 0) && !silenced;
+    bool shouldBuzz = (activeAlertCount > 0);
 
     if (!shouldBuzz) {
         if (buzzerOn) {
@@ -338,22 +287,18 @@ void setup() {
     pinMode(BUZZER_PIN, OUTPUT);
     digitalWrite(BUZZER_PIN, LOW);
 
-    pinMode(ACK_BUTTON_PIN, INPUT_PULLUP);
-
     pinMode(STATUS_LED_PIN, OUTPUT);
     digitalWrite(STATUS_LED_PIN, LOW);
 
     Serial.println();
     Serial.println("============================================");
-    Serial.println("ALTIVEX BASECAMP DEMO");
+    Serial.println("ALTIVEX BASECAMP");
     Serial.println("============================================");
     Serial.printf("Basecamp ID:   %s\n", BASECAMP_ID);
     Serial.printf("Broker:        %s:%u\n", MQTT_HOST, MQTT_PORT);
     Serial.printf("Sub topic:     %s\n", TOPIC_CMD);
-    Serial.printf("Pub topic:     %s\n", TOPIC_ACK);
     Serial.printf("Buzzer pin:    GPIO%u\n", BUZZER_PIN);
-    Serial.printf("Ack button:    GPIO%u (INPUT_PULLUP, active LOW)\n",
-                  ACK_BUTTON_PIN);
+    Serial.println("Mode:          Buzzer continuous tanpa ack manual");
     Serial.println("============================================");
 
     connectWifi();
@@ -391,13 +336,11 @@ void loop() {
         mqtt.loop();
     }
 
-    // 4. Tombol ack (debounced)
-    handleAckButton();
-
-    // 5. Buzzer state machine
+    // 4. Buzzer state machine (auto-on saat ada alert, auto-off saat
+    //    set kosong; tidak ada interaksi tombol)
     updateBuzzer();
 
-    // 6. LED status
+    // 5. LED status
     updateStatusLed();
 }
 
@@ -407,9 +350,6 @@ void loop() {
 // 1. Wiring:
 //    Buzzer: pin + (positive)  → ESP32 GPIO 13
 //            pin - (negative)  → ESP32 GND
-//    Button: 1 kaki              → ESP32 GPIO 14
-//            kaki seberang       → ESP32 GND
-//            (tidak butuh resistor — pakai INPUT_PULLUP internal)
 //
 // 2. Edit 3 baris di Section 1 (WIFI_SSID, WIFI_PASSWORD, MQTT_PASSWORD)
 //
@@ -418,7 +358,7 @@ void loop() {
 // 4. Buka Serial Monitor 115200. Yang harus muncul:
 //
 //      ============================================
-//      ALTIVEX BASECAMP DEMO
+//      ALTIVEX BASECAMP
 //      ============================================
 //      ...
 //      [wifi] Connected. IP=192.168.x.x
@@ -432,21 +372,16 @@ void loop() {
 //      ➕ Alert +: DEMO-CIFOR-01|OUT_OF_GEOFENCE (total=1)
 //      🚨 [OUT_OF_GEOFENCE] DEMO-CIFOR-01 — Demo Pendaki 1 (...)
 //
-//    Buzzer mulai bunyi 0.5s on / 0.5s off.
+//    Buzzer mulai bunyi 0.5s on / 0.5s off dan TIDAK akan berhenti
+//    sampai backend kirim "OFF" (pendaki kembali ke jalur).
 //
-// 6. Penjaga tekan tombol ack:
-//
-//      🔕 ACK button pressed — buzzer silenced (set masih 1 alert aktif)
-//
-//    Buzzer berhenti, tapi alert masih di-track.
-//
-// 7. Pendaki balik ke koridor → backend kirim "OFF":
+// 6. Pendaki balik ke koridor → backend kirim "OFF":
 //
 //      [mqtt] << altivex/basecamp/cmd (124 bytes)
 //      ➖ Alert -: DEMO-CIFOR-01|OUT_OF_GEOFENCE (total=0)
 //      ✅ [OUT_OF_GEOFENCE] DEMO-CIFOR-01 — clear
 //
-//    Set jadi kosong, silenced flag di-reset, buzzer mati.
+//    Set jadi kosong, buzzer mati otomatis.
 //
 // ---------------------------------------------------------------------
 // SKENARIO DEMO PRESENTASI
@@ -455,13 +390,14 @@ void loop() {
 //      (file ini)
 //   2. Daftarkan pendaki di dashboard demo dengan ID = DEVICE_ID dari
 //      firmware pendaki
-//   3. Bawa ESP32 pendaki muter Situgede mengikuti loop CIFOR
-//   4. Saat sengaja keluar dari koridor jalan utama, basecamp ESP32
-//      di pos buzzing
-//   5. Penjaga tekan tombol → silent (demo bahwa false-alarm short-trip
-//      "buang air kecil" bisa di-handle penjaga tanpa mengganggu)
-//   6. Pendaki balik ke koridor → buzzer mati otomatis (demo bahwa
-//      alert auto-clear saat kondisi recover)
+//   3. Bawa ESP32 pendaki ke arah luar koridor — buzzer basecamp
+//      langsung berbunyi
+//   4. Bawa ESP32 pendaki kembali ke koridor — buzzer basecamp
+//      mati sendiri begitu backend mendeteksi posisi sudah aman
+//
+//   Catatan: tidak ada cara mematikan buzzer secara manual. Skenario
+//   "buang air sebentar lalu kembali" akan memicu buzzer selama
+//   pendaki di luar polygon, lalu otomatis mati saat dia kembali.
 //
 // ---------------------------------------------------------------------
 // TROUBLESHOOTING
@@ -471,11 +407,6 @@ void loop() {
 //             digitalWrite(BUZZER_PIN, HIGH);  // pasang di setup()
 //           Buzzer harus bunyi terus. Kalau tidak, cek polarity /
 //           kabel putus / buzzer rusak.
-//
-//   - Tombol ack tidak respond
-//        => Cek wiring (pin 14 ↔ GND). Pastikan momentary push button
-//           (bukan toggle switch). Test dengan multimeter — saat
-//           ditekan harus continuity, lepas terbuka.
 //
 //   - Buzzer terus bunyi walau Serial bilang alert sudah clear
 //        => Restart ESP32. Kalau persistent, kemungkinan logic glitch —
