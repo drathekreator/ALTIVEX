@@ -1,0 +1,31 @@
+# =====================================================================
+# ALTIVEX — Overlay untuk skenario "nginx host" (bukan Caddy container)
+# ---------------------------------------------------------------------
+# Skenario: reverse proxy bukan Caddy di compose, tapi nginx yang
+# di-install langsung di host VM (mis. /etc/nginx/sites-enabled/altivex).
+# Untuk pola itu, backend WAJIB publish port 8080 ke host supaya nginx
+# host bisa proxy_pass http://127.0.0.1:8080.
+#
+# `deployment/docker-compose.prod.yml` men-set `ports: !reset []` karena
+# di-asumsikan Caddy container yang masuk network internal compose.
+# Overlay ini meng-undo reset itu — pakai BERSAMA prod overlay:
+#
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f deployment/docker-compose.prod.yml \
+#     -f deployment/docker-compose.host-nginx.yml \
+#     up -d --build
+#
+# Hasil: backend listen di host port 8080 → nginx host yang sudah ada
+# di /etc/nginx/sites-enabled/altivex bisa proxy_pass tanpa rebuild
+# config. Caddy service di prod overlay tetap running, tapi tidak akan
+# bentrok dengan nginx selama konfigurasi nginx-nya yang menerima
+# port 80/443 publik (Caddy bisa dimatikan terpisah kalau memang tidak
+# dipakai — `docker compose stop caddy`).
+# =====================================================================
+
+services:
+  backend:
+    # Re-publish 8080 ke host — undo `ports: !reset []` di prod overlay.
+    ports:
+      - "127.0.0.1:8080:8080"
