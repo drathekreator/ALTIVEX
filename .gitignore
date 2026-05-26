@@ -41,6 +41,12 @@ mosquitto/log/*.log
 Thumbs.db
 Desktop.ini
 
+# Temporary Office lock files
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.xls
+
 # =====================================================================
 # Frontend dev artifacts
 # =====================================================================
@@ -53,6 +59,15 @@ build/
 .serverless/
 .fusebox/
 .dynamodb/
+
+# Local security scan outputs
+security-reports/
+
+# Local AI/export notes
+gemini-code-*.md
+
+# Non-code presentation assets (keep repo focused on app source)
+pitch-deck/
 
 # =====================================================================
 # SQLx offline mode
